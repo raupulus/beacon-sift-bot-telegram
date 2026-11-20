@@ -5,22 +5,56 @@
 
 <br clear="left"/>
 
-Servicio independiente en **Python + Docker** que distribuye en tiempo real hacia canales y grupos de **Telegram** las noticias técnicas, avisos locales y alertas CVE agregadas por [`feed.raupulus.dev`](https://feed.raupulus.dev).
+Servicio independiente en **Python 3.12 + Docker** que distribuye en tiempo real hacia canales, grupos, supergrupos (incluyendo *topics*) y chats autorizados de **Telegram** las noticias técnicas, avisos locales y alertas CVE agregadas por [`feed.raupulus.dev`](https://feed.raupulus.dev).
 
 ---
 
 ## Objetivo del servicio
 
-- Recibir alertas en vivo mediante **WebSockets públicos** (Laravel Reverb) y filtrarlas por canal/grupo según **tipo de fuente** (`type`) y **prioridad mínima** (`low`, `medium`, `high`, `critical`).
-- Permitir consultas bajo demanda y administración de filtros mediante comandos de Telegram cumpliendo el contrato compartido `BOT_COMMANDS_CONTRACT.md`.
-- Operar de forma **desacoplada** de la base de datos de `web/`, consumiendo únicamente el WebSocket público y los endpoints `GET` JSON de solo lectura (`/api/v1/status`, `/api/v1/sources`, `/api/v1/types`, `/api/v1/items`).
+- Recibir alertas en vivo mediante **WebSockets públicos** (Laravel Reverb en el canal `beacon.news`, evento `news.created`) y distribuirlas según **tipo de fuente** (`type`) y **prioridad mínima** (`low`, `medium`, `high`, `critical`).
+- Realizar **catch-up automático** tras reconexiones usando `since_id` para no perder noticias ni duplicar alertas ya enviadas.
+- Permitir consultas bajo demanda y administración de suscripciones cumpliendo el contrato compartido `BOT_COMMANDS_CONTRACT.md`.
+- Operar totalmente desacoplado de la base de datos PostgreSQL de `web/`, usando persistencia local en **SQLite** (`data/bot.db`) y consumiendo únicamente los endpoints públicos `GET /api/v1/{status,sources,types,items}`.
 
 ---
 
-## Catálogo de comandos previstos
+## Catálogo de comandos (`BOT_COMMANDS_CONTRACT.md`)
 
-- **Consulta (públicos):** `/help`, `/status`, `/sources [type]`, `/types`, `/latest [type] [priority] [limit]`, `/search <query> [type] [limit]`
-- **Gestión de suscripciones (administradores):** `/subscribe <type|all> [min_priority]`, `/unsubscribe <type|all>`, `/filters`, `/pause`, `/resume`
+- **Consultas (públicos):** `/help`, `/status`, `/sources [type]`, `/types`, `/latest [type] [priority] [limit]`, `/search <query> [type] [limit]`
+- **Gestión del canal (administradores):** `/subscribe <type|all> [min_priority]`, `/unsubscribe <type|all>`, `/filters`, `/pause`, `/resume`
+
+---
+
+## Ejecución en desarrollo local (`uv`)
+
+```bash
+# 1. Instalar dependencias con Python 3.12
+uv sync --python 3.12
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Rellenar TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_IDS, WEB_API_BASE_URL, REVERB_WS_URL y REVERB_APP_KEY
+
+# 3. Ejecutar lint y tests
+uv run ruff check src tests
+uv run ruff format --check src tests
+uv run pytest
+
+# 4. Arrancar el bot
+uv run python -m src.main
+```
+
+---
+
+## Despliegue con Docker
+
+```bash
+cp .env.example .env
+# Configurar credenciales y URLs en .env
+docker compose up -d --build
+```
+
+La base de datos SQLite de suscripciones se persiste en `./data/bot.db` (montado en `/app/data`).
 
 ---
 
@@ -28,11 +62,27 @@ Servicio independiente en **Python + Docker** que distribuye en tiempo real haci
 
 ```text
 bot-telegram/
-├── AGENTS.md        # Reglas y arquitectura del servicio
-├── README.md        # Documentación general
-├── .gitignore       # Exclusiones Python, secretos y datos locales
-├── images/          # Logotipo oficial e iconos (SVG y PNG)
-└── src/             # Código fuente Python del bot
+├── AGENTS.md            # Reglas y arquitectura del servicio
+├── README.md            # Documentación general
+├── .env.example         # Plantilla de variables de entorno
+├── .gitignore           # Exclusiones Python, secretos y SQLite local
+├── .dockerignore        # Exclusiones de build Docker
+├── Dockerfile           # Imagen ligera python:3.12-slim no-root
+├── docker-compose.yml   # Servicio independiente con volumen ./data
+├── pyproject.toml       # Dependencias y configuración pytest/ruff
+├── images/              # Logotipo oficial e iconos (SVG y PNG)
+├── src/
+│   ├── main.py          # Entrypoint y ciclo de vida (Telegram + Reverb)
+│   ├── config.py        # Settings desde .env
+│   ├── models.py        # DTOs y enum Priority
+│   ├── storage.py       # Persistencia SQLite (suscripciones, pausa y deduplicación)
+│   ├── api_client.py    # Cliente async /api/v1/*
+│   ├── reverb_client.py # Cliente WebSocket Pusher v7 + catch-up
+│   ├── formatter.py     # Formateo HTML seguro
+│   ├── permissions.py   # Validación de administradores
+│   ├── dispatcher.py    # Enrutado y envío con deduplicación
+│   └── handlers/        # Comandos info.py y subscriptions.py
+└── tests/               # Suite automatizada pytest + pytest-asyncio
 ```
 
 ---

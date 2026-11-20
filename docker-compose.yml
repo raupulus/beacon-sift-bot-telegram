@@ -1,0 +1,9 @@
+services:
+  bot-telegram:
+    build: .
+    container_name: beacon-sift-bot-telegram
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
