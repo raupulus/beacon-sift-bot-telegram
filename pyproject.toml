@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "beacon-sift-bot-telegram"
+version = "0.1.0"
+description = "Bot de Telegram en Python para beacon-sift (feed.raupulus.dev): alertas en tiempo real vía WebSockets y consultas filtradas."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Raúl Caro Pastorino", email = "public@raupulus.dev" },
+]
+dependencies = [
+    "aiosqlite>=0.20",
+    "httpx>=0.28",
+    "pydantic-settings>=2.7",
+    "python-telegram-bot>=21.10",
+    "websockets>=14.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.8",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
