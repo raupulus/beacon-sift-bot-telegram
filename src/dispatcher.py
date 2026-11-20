@@ -75,19 +75,19 @@ class AlertDispatcher:
         except RetryAfter as exc:
             wait_seconds = min(max(float(exc.retry_after), 0.1), 15.0)
             logger.warning(
-                "Rate limit en Telegram para chat %s; reintento en %ss", chat_id, wait_seconds
+                "Telegram rate limit hit for chat %s; retrying in %ss", chat_id, wait_seconds
             )
             await asyncio.sleep(wait_seconds)
             try:
                 await self.bot.send_message(**kwargs)
                 return True
             except TelegramError as retry_exc:
-                logger.warning("Reintento fallido enviando a chat %s: %s", chat_id, retry_exc)
+                logger.warning("Retry failed sending alert to chat %s: %s", chat_id, retry_exc)
                 return False
         except Forbidden:
-            logger.warning("Bot bloqueado o expulsado del chat %s; pausando envíos.", chat_id)
+            logger.warning("Bot blocked or removed from chat %s; pausing deliveries.", chat_id)
             await self.storage.set_paused(chat_id, thread_id, True)
             return False
         except TelegramError as exc:
-            logger.warning("Error enviando alerta a chat %s: %s", chat_id, exc)
+            logger.warning("Failed sending alert to chat %s: %s", chat_id, exc)
             return False

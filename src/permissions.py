@@ -42,7 +42,7 @@ async def can_manage_subscriptions(
         try:
             member = await context.bot.get_chat_member(chat.id, user.id)
         except TelegramError as exc:
-            logger.warning("No se pudo verificar miembro %s en chat %s: %s", user.id, chat.id, exc)
+            logger.warning("Failed to verify member %s in chat %s: %s", user.id, chat.id, exc)
             return False
 
         return member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}

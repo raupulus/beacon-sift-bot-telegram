@@ -55,7 +55,7 @@ class ReverbListener:
         try:
             frame = json.loads(raw)
         except ValueError:
-            logger.debug("Frame WebSocket no JSON ignorado")
+            logger.debug("Ignored non-JSON WebSocket frame")
             return None
 
         if not isinstance(frame, dict):
@@ -72,7 +72,7 @@ class ReverbListener:
         if event_name == "pusher_internal:subscription_succeeded":
             self.is_connected = True
             self.last_error = None
-            logger.info("Suscrito al canal WebSocket público '%s'", self.channel)
+            logger.info("Subscribed to public WebSocket channel '%s'", self.channel)
             await self.run_catchup()
             return None
 
@@ -81,8 +81,8 @@ class ReverbListener:
             return None
 
         if event_name == "pusher:error":
-            self.last_error = str(frame.get("data") or "Error de protocolo WebSocket")
-            logger.warning("Error recibido desde Reverb: %s", self.last_error)
+            self.last_error = str(frame.get("data") or "WebSocket protocol error")
+            logger.warning("Error received from Reverb: %s", self.last_error)
             return None
 
         if event_name == "news.created":
@@ -136,7 +136,7 @@ class ReverbListener:
 
             return processed
         except WebApiUnavailableError as exc:
-            logger.warning("No se pudo completar el catch-up inicial: %s", exc)
+            logger.warning("Failed to complete initial catch-up: %s", exc)
             return 0
 
     async def run_forever(self, stop_event: asyncio.Event) -> None:
@@ -177,7 +177,7 @@ class ReverbListener:
             except Exception as exc:
                 self.is_connected = False
                 self.last_error = str(exc)
-                logger.warning("Conexión Reverb cerrada (%s). Reintento en %ss.", exc, backoff)
+                logger.warning("Reverb connection closed (%s). Retrying in %ss.", exc, backoff)
             finally:
                 self.is_connected = False
 

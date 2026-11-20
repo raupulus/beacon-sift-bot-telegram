@@ -24,3 +24,7 @@ venv/
 data/
 logs/
 *.log
+
+# Ephemeral documentation (per developer, never committed)
+/docs/planning/
+/docs/auditorias/

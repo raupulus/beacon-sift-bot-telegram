@@ -46,7 +46,7 @@ def build_application(settings: Settings) -> Application:
             name="reverb-listener",
         )
         app.bot_data["reverb_task"] = task
-        logging.getLogger(__name__).info("Bot de Telegram inicializado y escuchando Reverb.")
+        logging.getLogger(__name__).info("Telegram bot initialized and listening to Reverb.")
 
     async def post_shutdown(app: Application) -> None:
         stop_event.set()
@@ -57,7 +57,7 @@ def build_application(settings: Settings) -> Application:
                 await task
         await api_client.close()
         await storage.close()
-        logging.getLogger(__name__).info("Recursos de beacon-sift-bot-telegram cerrados.")
+        logging.getLogger(__name__).info("beacon-sift-bot-telegram resources closed.")
 
     application = (
         Application.builder()
@@ -95,7 +95,7 @@ def main() -> None:
 
     if not settings.telegram_bot_token.strip():
         logging.getLogger(__name__).error(
-            "Falta TELEGRAM_BOT_TOKEN en el entorno (.env). Abortando inicio."
+            "Missing TELEGRAM_BOT_TOKEN in environment (.env). Aborting startup."
         )
         sys.exit(1)
 

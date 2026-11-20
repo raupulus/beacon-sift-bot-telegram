@@ -47,7 +47,7 @@ class BeaconApiClient:
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
-            logger.warning("Fallo consultando %s en web/: %s", path, exc)
+            logger.warning("Failed querying %s on web API: %s", path, exc)
             raise WebApiUnavailableError("No se pudo conectar con la API de beacon-sift.") from exc
 
         if not isinstance(payload, dict):
