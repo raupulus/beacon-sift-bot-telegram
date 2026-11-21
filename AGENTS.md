@@ -71,20 +71,24 @@ bot-telegram/
 └── tests/                           # Tests automatizados pytest / pytest-asyncio (14 tests)
 ```
 
-### Reglas de aislamiento
-- **Nunca** importar módulos de `web/` o `bot-discord/` ni conectarse directamente a la base de datos PostgreSQL de `web/`.
+### Reglas de aislamiento y ecosistema `beacon-sift`
+- Este directorio es un **repositorio Git independiente y autocontenido** (`raupulus/beacon-sift-bot-telegram`). No depende de ninguna raíz compartida ni de archivos externos fuera del repo.
+- **Nunca** importar módulos de los repos hermanos ni conectarse directamente a la base de datos PostgreSQL de `web/`.
 - Toda comunicación con `web/` se realiza exclusivamente por **WebSockets públicos** (Laravel Reverb) y por los **endpoints `GET` JSON de solo lectura** (`/api/v1/...`).
+- **Ecosistema independiente de `beacon-sift`:**
+  - Servicio Web / API / Reverb: [GitHub (`raupulus/beacon-sift-web`)](https://github.com/raupulus/beacon-sift-web) · [GitLab](https://gitlab.com/raupulus/beacon-sift-web)
+  - Bot hermano de Discord: [GitHub (`raupulus/beacon-sift-bot-discord`)](https://github.com/raupulus/beacon-sift-bot-discord) · [GitLab](https://gitlab.com/raupulus/beacon-sift-bot-discord)
 
 ---
 
-## 3. Contrato obligatorio de comandos (`BOT_COMMANDS_CONTRACT.md`)
+## 3. Contrato obligatorio de comandos y paridad
 
-Este bot **DEBE cumplir íntegramente** el contrato común definido en el `BOT_COMMANDS_CONTRACT.md` de `beacon-sift`:
+El contrato operativo vive **autocontenido en este repositorio** en [`docs/info/commands.md`](./docs/info/commands.md) y mantiene paridad estricta con el bot hermano `beacon-sift-bot-discord`:
 
-- **Consultas:** `/help`, `/status`, `/sources [type]`, `/types`, `/latest [type] [priority] [limit]`, `/search <query> [type] [limit]`
+- **Consultas públicas:** `/help`, `/status`, `/sources [type]`, `/types`, `/latest [type] [priority] [limit]`, `/search <query> [type] [limit]`
 - **Gestión de canal (solo administradores, salvo `/filters` de consulta en canal):** `/subscribe <type|all> [min_priority]`, `/unsubscribe <type|all>`, `/filters`, `/pause`, `/resume`
-- **Paridad estricta:** No introducir comandos huérfanos fuera del contrato. Si se modifica un comando, parámetro o permiso, actualizar primero `BOT_COMMANDS_CONTRACT.md` y replicarlo en `bot-discord/`.
-- **Formato en Telegram:** Mensajes limpios en `ParseMode.HTML` con escape estricto (`html.escape`), enlace directo a la fuente original, fuente, tipo, prioridad, fecha y extracto breve (*snippet*) truncado de forma segura por debajo de 4096 caracteres.
+- **Paridad estricta:** mismos nombres lógicos, parámetros (`type`, `priority`, `limit`, `query`), rangos (`limit=1..10`, defecto `5`), semántica de permisos y manejo amigable de errores (sin resultados, API caída sin exponer trazas ni secretos, y uso esperado ante parámetros inválidos). No introducir comandos huérfanos sin actualizar [`docs/info/commands.md`](./docs/info/commands.md) y replicar el cambio en `beacon-sift-bot-discord`.
+- **Formato mínimo en Telegram:** mensajes limpios en `ParseMode.HTML` con escape estricto (`html.escape`), titular enlazado directamente a la fuente original, fuente, tipo, prioridad, fecha y extracto breve (*snippet*) truncado de forma segura por debajo de 4096 caracteres (`TELEGRAM_SAFE_MAX_LENGTH = 4000`).
 
 ---
 

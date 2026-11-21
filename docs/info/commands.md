@@ -6,7 +6,7 @@ Referencia verificada directamente contra [`src/handlers/__init__.py`](../../src
 
 ## 1. Comandos de Telegram (`BOT_COMMANDS`)
 
-Los **11 comandos** siguientes se registran en Telegram mediante `set_my_commands(BOT_COMMANDS)` dentro de `post_init` ([`src/main.py`](../../src/main.py)) y se enlazan con `CommandHandler` en `register_handlers()`. Cumplen el contrato compartido `BOT_COMMANDS_CONTRACT.md` (sin comandos huérfanos).
+Los **11 comandos** siguientes se registran en Telegram mediante `set_my_commands(BOT_COMMANDS)` dentro de `post_init` ([`src/main.py`](../../src/main.py)) y se enlazan con `CommandHandler` en `register_handlers()`, manteniendo paridad funcional exacta con el bot hermano `beacon-sift-bot-discord`.
 
 ### Comandos públicos de información y consulta
 
@@ -32,6 +32,21 @@ Los **11 comandos** siguientes se registran en Telegram mediante `set_my_command
 > **Trampa en `/search`:** como `[type]` se desambigua dinámicamente comparando el último token con `/api/v1/types` cuando hay al menos 2 palabras de búsqueda, una búsqueda como `/search kernel linux` toma `linux` como filtro `[type]` y busca solo `"kernel"` (documentado en [`handlers-y-arranque.md`](./handlers-y-arranque.md)).
 
 > **Trampa en `/latest`:** aunque `BeaconApiClient.get_items` admite `per_page` hasta `50`, el comando público `/latest` y `/search` validan `1 <= limit <= 10` según el contrato.
+
+### Contrato compartido de paridad y formato mínimo
+
+Principios obligatorios compartidos entre `beacon-sift-bot-telegram` y `beacon-sift-bot-discord`:
+
+1. **Paridad exacta de catálogo:** los 11 comandos mantienen los mismos nombres lógicos, semántica de filtros (`type`, `priority`, `query`, `limit` `1..10` con defecto `5`) y reglas de autorización. No deben existir comandos huérfanos en una sola plataforma salvo excepción documentada.
+2. **Formato mínimo por noticia entregada:**
+   - Titular enlazado directamente a la URL original (`http`/`https`).
+   - Fuente (`source`), tipo (`type`) y prioridad (`priority`: `low`, `medium`, `high`, `critical`).
+   - Fecha de publicación formateada (`BOT_TIMEZONE`).
+   - Extracto breve (*snippet*) limpio y truncado bajo el límite seguro de Telegram (`TELEGRAM_SAFE_MAX_LENGTH = 4000` en `ParseMode.HTML`).
+3. **Reglas unificadas de respuesta y errores:**
+   - **Sin resultados:** responder claramente indicando que no hay elementos para los filtros aplicados.
+   - **API `web/` no disponible:** responder con mensaje amigable (`_API_UNAVAILABLE_MSG` o estado degradado en `/status`) sin exponer trazas ni secretos, registrando el fallo en inglés en `logger.warning`.
+   - **Parámetros inválidos:** indicar qué parámetro es incorrecto y mostrar el uso esperado del comando.
 
 ---
 
@@ -62,4 +77,4 @@ Más detalles de despliegue en [`docs/deploys/docker.md`](../deploys/docker.md).
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

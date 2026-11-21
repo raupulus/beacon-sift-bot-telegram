@@ -13,15 +13,16 @@ Servicio independiente en **Python 3.12 + Docker** que distribuye en tiempo real
 
 - Recibir alertas en vivo mediante **WebSockets públicos** (Laravel Reverb en el canal `beacon.news`, evento `news.created`) y distribuirlas según **tipo de fuente** (`type`) y **prioridad mínima** (`low`, `medium`, `high`, `critical`).
 - Realizar **catch-up automático** tras reconexiones usando `since_id` para no perder noticias ni duplicar alertas ya enviadas.
-- Permitir consultas bajo demanda y administración de suscripciones cumpliendo el contrato compartido `BOT_COMMANDS_CONTRACT.md`.
+- Permitir consultas bajo demanda y administración de suscripciones cumpliendo la paridad de comandos descrita en [`docs/info/commands.md`](./docs/info/commands.md).
 - Operar totalmente desacoplado de la base de datos PostgreSQL de `web/`, usando persistencia local en **SQLite** (`data/bot.db`) y consumiendo únicamente los endpoints públicos `GET /api/v1/{status,sources,types,items}`.
 
 ---
 
-## Catálogo de comandos (`BOT_COMMANDS_CONTRACT.md`)
+## Catálogo de comandos
 
 - **Consultas (públicos):** `/help`, `/status`, `/sources [type]`, `/types`, `/latest [type] [priority] [limit]`, `/search <query> [type] [limit]`
 - **Gestión del canal (administradores):** `/subscribe <type|all> [min_priority]`, `/unsubscribe <type|all>`, `/filters`, `/pause`, `/resume`
+- Especificación completa en [`docs/info/commands.md`](./docs/info/commands.md).
 
 ---
 
@@ -62,14 +63,18 @@ La base de datos SQLite de suscripciones se persiste en `./data/bot.db` (montado
 
 ```text
 bot-telegram/
-├── AGENTS.md            # Reglas y arquitectura del servicio
+├── AGENTS.md            # Reglas, arquitectura y protocolo residente de documentación
+├── CLAUDE.md            # Puntero a AGENTS.md
 ├── README.md            # Documentación general
+├── .python-version      # Versión fijada (3.12)
 ├── .env.example         # Plantilla de variables de entorno
-├── .gitignore           # Exclusiones Python, secretos y SQLite local
+├── .gitignore           # Exclusiones Python, secretos, SQLite y docs efímeros
 ├── .dockerignore        # Exclusiones de build Docker
 ├── Dockerfile           # Imagen ligera python:3.12-slim no-root
 ├── docker-compose.yml   # Servicio independiente con volumen ./data
 ├── pyproject.toml       # Dependencias y configuración pytest/ruff
+├── uv.lock              # Lockfile reproducible de dependencias
+├── docs/                # Documentación viva (info/), Telegram Bot API destilada y deploys/
 ├── images/              # Logotipo oficial e iconos (SVG y PNG)
 ├── src/
 │   ├── main.py          # Entrypoint y ciclo de vida (Telegram + Reverb)
@@ -84,6 +89,18 @@ bot-telegram/
 │   └── handlers/        # Comandos info.py y subscriptions.py
 └── tests/               # Suite automatizada pytest + pytest-asyncio
 ```
+
+---
+
+## Documentación técnica y ecosistema `beacon-sift`
+
+- **Guía de arquitectura y protocolo:** [`AGENTS.md`](./AGENTS.md)
+- **Índice técnico vivo (`docs/info/`):** [`docs/info/README.md`](./docs/info/README.md)
+- **Despliegue Docker:** [`docs/deploys/docker.md`](./docs/deploys/docker.md)
+
+Repositorios independientes relacionados del ecosistema:
+- **Web / API / Reverb:** [GitHub (`raupulus/beacon-sift-web`)](https://github.com/raupulus/beacon-sift-web) · [GitLab](https://gitlab.com/raupulus/beacon-sift-web)
+- **Bot de Discord:** [GitHub (`raupulus/beacon-sift-bot-discord`)](https://github.com/raupulus/beacon-sift-bot-discord) · [GitLab](https://gitlab.com/raupulus/beacon-sift-bot-discord)
 
 ---
 
