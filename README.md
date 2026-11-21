@@ -65,6 +65,7 @@ La base de datos SQLite de suscripciones se persiste en `./data/bot.db` (montado
 bot-telegram/
 ├── AGENTS.md            # Reglas, arquitectura y protocolo residente de documentación
 ├── CLAUDE.md            # Puntero a AGENTS.md
+├── LICENSE              # Licencia GNU GPLv3 (GPL-3.0-or-later)
 ├── README.md            # Documentación general
 ├── .python-version      # Versión fijada (3.12)
 ├── .env.example         # Plantilla de variables de entorno
@@ -112,3 +113,9 @@ Creado por **Raúl Caro Pastorino (`@raupulus`)**, desarrollador Full Stack seni
 - **GitHub:** [https://github.com/raupulus](https://github.com/raupulus)
 - **GitLab:** [https://gitlab.com/raupulus](https://gitlab.com/raupulus)
 - **Correo público:** `public@raupulus.dev`
+
+---
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia **GNU General Public License v3.0 (`GPL-3.0-or-later`)**. Consulta el texto completo en [`LICENSE`](./LICENSE).
