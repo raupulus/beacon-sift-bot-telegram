@@ -38,6 +38,7 @@ def build_application(settings: Settings) -> Application:
 
     async def post_init(app: Application) -> None:
         await storage.initialize()
+        await storage.prune_dispatched(keep_last=5000)
         await app.bot.set_my_commands(BOT_COMMANDS)
 
         app_ctx: BotAppContext = app.bot_data["app_ctx"]

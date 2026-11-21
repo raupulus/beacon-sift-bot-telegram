@@ -2,7 +2,7 @@
 
 - **Fuentes oficiales descargadas:** [`src/api.md`](./src/api.md), [`src/formatting.md`](./src/formatting.md), [`src/faq.md`](./src/faq.md), [`src/getupdates.md`](./src/getupdates.md), [`src/sendmessage.md`](./src/sendmessage.md), [`src/setmycommands.md`](./src/setmycommands.md), [`src/getchatmember.md`](./src/getchatmember.md), [`src/botcommand.md`](./src/botcommand.md), [`src/linkpreviewoptions.md`](./src/linkpreviewoptions.md), [`src/responseparameters.md`](./src/responseparameters.md) (origen: `https://core.telegram.org/bots/...` y changelog oficial `Bot API 10.4` del `2026-11-09`)
 - **Fecha de descarga de fuentes:** `2026-11-20`
-- **Fecha de verificación real:** `2026-11-20` *(parcial: transporte HTTPS, estructura de respuesta JSON y error `401 Unauthorized` verificados contra `https://api.telegram.org`; los flujos autenticados quedan marcados como `⚠️ sin verificar` al no existir `TELEGRAM_BOT_TOKEN` real en el entorno)*
+- **Fecha de verificación real:** `2026-11-21` *(verificados en vivo contra `https://api.telegram.org`: `getMe`, `getWebhookInfo`, `getUpdates` con `Update.ALL_TYPES`, `setMyCommands`/`getMyCommands`, `sendMessage` con `ParseMode.HTML` + `LinkPreviewOptions(is_disabled=True)` y `getChatMember` en supergrupo; ver tabla inferior)*
 - **Cliente usado por el servicio:** `python-telegram-bot 22.8` (soporte declarado para Bot API `10.0`)
 
 ---
@@ -32,15 +32,15 @@ La configuración concreta de este bot, qué módulos invocan cada método y có
 
 | Aspecto | Estado | Evidencia / Nota |
 |---|---|---|
-| Endpoint HTTPS `https://api.telegram.org/bot<token>/METHOD_NAME` | ✅ Verificado (`2026-11-20`) | Petición real HTTPS `GET .../getMe` con token inválido responde `HTTP 401` |
-| Envoltorio JSON (`ok`, `error_code`, `description`) | ✅ Verificado (`2026-11-20`) | Respuesta real `{"ok":false,"error_code":401,"description":"Unauthorized: invalid token specified"}` |
-| Especificación Markdown oficial descargada (`Bot API 10.4`) | ✅ Descargada (`2026-11-20`) | Snapshots íntegros en `src/` |
-| `getUpdates` (*long polling*, `Update.ALL_TYPES`) | `⚠️ sin verificar` | Requiere `TELEGRAM_BOT_TOKEN` real contra `api.telegram.org` |
-| `setMyCommands` (registro de 11 comandos) | `⚠️ sin verificar` | Requiere `TELEGRAM_BOT_TOKEN` real |
-| `sendMessage` (`ParseMode.HTML`, `message_thread_id`, `link_preview_options`, `channel_post`) | `⚠️ sin verificar` | Requiere `TELEGRAM_BOT_TOKEN` real y chat/supergrupo/canal de prueba |
-| `getChatMember` en grupos/supergrupos | `⚠️ sin verificar` | Requiere `TELEGRAM_BOT_TOKEN` real en grupo con y sin permisos de admin |
-| Respuestas reales `429 RetryAfter` y `403 Forbidden` | `⚠️ sin verificar` | Cubierto solo mediante mocks en `tests/test_dispatcher.py` |
+| Endpoint HTTPS `https://api.telegram.org/bot<token>/METHOD_NAME` y error `401` | ✅ Verificado (`2026-11-20`) | Petición HTTPS real `401 Unauthorized: invalid token specified` |
+| `getMe` y `getWebhookInfo` con token real | ✅ Verificado (`2026-11-21`) | Bot activo (`can_join_groups=True`, `can_read_all_group_messages=False`, sin webhook previo) |
+| `getUpdates` (*long polling*, `Update.ALL_TYPES`) | ✅ Verificado (`2026-11-21`) | Recepción real de updates de supergrupo sin conflicto `409` |
+| `setMyCommands` + `getMyCommands` (11 comandos) | ✅ Verificado (`2026-11-21`) | Telegram confirmó `ok=True` y devolvió exactamente los 11 comandos |
+| `sendMessage` (`ParseMode.HTML`, `&#x27;`/`&lt;`/`&amp;`, `LinkPreviewOptions(is_disabled=True)`) | ✅ Verificado (`2026-11-21`) | Envío real en supergrupo con entidades `BOLD`, `CODE`, `TEXT_LINK`, `ITALIC` y preview desactivada |
+| `getChatMember` en supergrupo | ✅ Verificado (`2026-11-21`) | Funcionó incluso con el bot en rol `member`, devolviendo `status=creator` |
+| `channel_post` en canal y `message_thread_id` en supergrupo foro | `⚠️ sin verificar` | Pendiente de prueba en vivo en canal de difusión y supergrupo foro |
+| Respuestas reales `429 RetryAfter`, `403 Forbidden` y `ChatMigrated` | `⚠️ sin verificar` | Cubierto con tests automatizados en `tests/test_dispatcher.py` |
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

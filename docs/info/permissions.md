@@ -30,12 +30,13 @@ Orden estricto de evaluación en [`can_manage_subscriptions()`](../../src/permis
 2. Si `user` existe y `user.id in settings.admin_ids` → devuelve **`True`** *(superadministrador global del bot)*.
 3. Si `chat is None` → devuelve **`False`**.
 4. Si `chat.type == ChatType.PRIVATE` → devuelve **`settings.allow_private_subscriptions`** (`False` por defecto).
-5. Si `user is None` → devuelve **`False`**.
-6. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}`:
+5. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}` y `update.effective_message.sender_chat.id == chat.id` → devuelve **`True`** *(administrador anónimo publicando con identidad del propio grupo/supergrupo)*.
+6. Si `user is None` → devuelve **`False`**.
+7. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}`:
    - Llama a `await context.bot.get_chat_member(chat.id, user.id)`.
    - Ante `TelegramError`, registra log `WARNING` en inglés (`Failed to verify member %s in chat %s: %s`) y devuelve **`False`**.
    - Devuelve `True` solo si `member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}`.
-7. Cualquier otro tipo de chat → **`False`**.
+8. Cualquier otro tipo de chat → **`False`**.
 
 ---
 
@@ -63,25 +64,26 @@ Orden estricto de evaluación en [`can_manage_subscriptions()`](../../src/permis
 
 ## 7. Trampas conocidas
 
-- **Requisito de `getChatMember` en Telegram:** según la especificación oficial ([`ERRATAS.md`](../apis/telegram-bot-api/ERRATAS.md)), Telegram solo garantiza que `getChatMember` consulte a terceros si **el bot es administrador del grupo/supergrupo**. Si no lo es, puede lanzar `TelegramError` y denegar el comando por seguridad salvo usuarios en `TELEGRAM_ADMIN_IDS` (`⚠️ sin verificar` en grupo real).
-- **Canales sin `effective_user`:** los mensajes escritos en un canal llegan como `channel_post`; cualquier administrador con permiso de publicar en el canal puede configurar el bot en ese canal.
+- **Requisito de `getChatMember` en Telegram:** según la especificación oficial ([`ERRATAS.md`](../apis/telegram-bot-api/ERRATAS.md)), Telegram solo garantiza consultar a terceros si el bot es administrador del chat. En prueba real del `2026-11-21` en un supergrupo funcionó incluso con el bot como `member` (devolviendo `status=creator`), pero en producción se recomienda otorgar rol administrador al bot en los grupos gestionados para evitar fallos futuros.
+- **Canales sin `effective_user`:** los mensajes escritos en un canal llegan como `channel_post`; cualquier administrador con permiso de publicar en el canal puede configurar el bot en ese canal (`⚠️ sin verificar` en canal real).
 
 ---
 
 ## 8. Tests que lo cubren
 
+- [`tests/test_permissions.py`](../../tests/test_permissions.py):
+  - Administrador anónimo en supergrupo (`sender_chat.id == chat.id`) permitido; `sender_chat` ajeno denegado.
+  - Fallo `TelegramError` en `get_chat_member()` deniega de forma segura.
+  - Bypass global `TELEGRAM_ADMIN_IDS` y flag `allow_private_subscriptions`.
 - [`tests/test_handlers.py`](../../tests/test_handlers.py) (`test_subscription_commands_permissions_and_lifecycle`):
-  - Miembro normal en supergrupo → denegado.
-  - Usuario no admin en `ChatType.PRIVATE` con `allow_private_subscriptions=False` → denegado.
-  - `ChatMemberStatus.ADMINISTRATOR` en supergrupo → permitido.
-  - `channel_post` en `ChatType.CHANNEL` sin `user_id` → permitido.
+  - Miembro normal en supergrupo, privado, `ADMINISTRATOR` y `channel_post`.
 
 ---
 
 ## 9. Pendiente real
 
-- Añadir cobertura de test para fallo `TelegramError` en `get_chat_member()` y para administradores anónimos en supergrupos (`@GroupAnonymousBot`, ID `1087968824`) verificándolo contra un supergrupo real (`⚠️ sin verificar`).
+- Verificar en vivo `channel_post` en un canal de difusión real y administrador anónimo en un supergrupo real (`⚠️ sin verificar`).
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

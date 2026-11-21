@@ -94,6 +94,7 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 
 ## 8. Tests que lo cubren
 
+- [`tests/test_main_and_config.py`](../../tests/test_main_and_config.py) — verifica `Settings.admin_ids` (espacios, tokens vacíos/inválidos), normalización de URLs/`log_level` y `_parse_iso_datetime()`.
 - [`tests/test_api_client.py`](../../tests/test_api_client.py) — ejercita `from_api_dict` de `ApiStatus`, `SourceInfo`, `TypeInfo`, `NewsItem` y `SourceSummary`.
 - [`tests/test_dispatcher.py`](../../tests/test_dispatcher.py), [`tests/test_handlers.py`](../../tests/test_handlers.py), [`tests/test_formatter.py`](../../tests/test_formatter.py) — ejercitan `Settings`, `Priority` (`parse`, `weight`, `label_es`, `emoji`) y zona horaria.
 
@@ -101,8 +102,8 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 
 ## 9. Pendiente real
 
-- Añadir tests específicos dedicados a `Settings.admin_ids` (tokens inválidos/espacios) y `_parse_iso_datetime` con formatos límite si se amplía la configuración en el futuro.
+- Ninguno actualmente.
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

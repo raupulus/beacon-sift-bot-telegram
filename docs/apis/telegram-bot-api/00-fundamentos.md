@@ -2,7 +2,7 @@
 
 - **Fuentes oficiales:** [`src/api.md`](./src/api.md) (`Making requests`, `Available types`), changelog oficial `Bot API 10.4` (`2026-11-09`)
 - **Fecha de descarga:** `2026-11-20`
-- **Fecha de verificación real:** `2026-11-20` *(verificación HTTP sin token válido contra `api.telegram.org/bot.../getMe`)*
+- **Fecha de verificación real:** `2026-11-21` *(peticiones HTTP reales contra `api.telegram.org` con token válido en `.env` local: `getMe`, `getWebhookInfo`, `getUpdates`, `setMyCommands`, `getMyCommands`, `getChatMember` y `sendMessage`)*
 
 ---
 
@@ -18,15 +18,17 @@
   3. `application/json` *(excepto al subir ficheros)*
   4. `multipart/form-data` *(obligatorio al subir ficheros)*
 
-### Verificación real realizada (`2026-11-20`)
+### Verificación real realizada (`2026-11-20` y `2026-11-21`)
 
-Petición directa ejecutada con `curl` contra `https://api.telegram.org/bot000000:INVALID/getMe`:
-- Código HTTP devuelto: `401`
-- Cuerpo JSON devuelto:
-  ```json
-  {"ok":false,"error_code":401,"description":"Unauthorized: invalid token specified"}
-  ```
-- Con esto queda verificado el envoltorio de error real en producción. El resto de métodos autenticados (`getUpdates`, `sendMessage`, `setMyCommands`, `getChatMember`) quedan `⚠️ sin verificar` hasta ejecutar contra un bot real con `TELEGRAM_BOT_TOKEN`.
+1. **Envoltorio de error (`2026-11-20`):** petición con token inválido a `https://api.telegram.org/bot000000:INVALID/getMe`:
+   - Código HTTP devuelto: `401`
+   - Cuerpo JSON devuelto:
+     ```json
+     {"ok":false,"error_code":401,"description":"Unauthorized: invalid token specified"}
+     ```
+2. **Métodos autenticados (`2026-11-21`):** ejecutados en vivo con `python-telegram-bot 22.8` contra `api.telegram.org` usando `TELEGRAM_BOT_TOKEN` cargado desde `.env` (ignorado por Git):
+   - `getMe`, `getWebhookInfo`, `getUpdates`, `setMyCommands`, `getMyCommands`, `getChatMember` (en supergrupo real) y `sendMessage` con `ParseMode.HTML` + `LinkPreviewOptions(is_disabled=True)` verificados con éxito (`ok: true`).
+   - Quedan `⚠️ sin verificar` en vivo únicamente escenarios de tráfico de producción (`429 RetryAfter`, `403 Forbidden`, `ChatMigrated` en vivo), `channel_post` en canal de difusión y `message_thread_id` en supergrupo con modo foro.
 
 ---
 
@@ -66,8 +68,8 @@ Según [`src/api.md`](./src/api.md), toda respuesta de la API devuelve un objeto
 
 - **Versión oficial documentada en `core.telegram.org` (`2026-11-20`):** `Bot API 10.4` (`2026-11-09`).
 - **Versión de librería instalada (`uv.lock`):** `python-telegram-bot 22.8`, cuyo soporte declarado corresponde a `Bot API 10.0`.
-- Ninguno de los métodos que usa actualmente `bot-telegram/` (`getUpdates`, `setMyCommands`, `sendMessage`, `getChatMember`) depende de novedades introducidas entre `10.1` y `10.4`, pero esta diferencia de versiones debe considerarse si en el futuro se incorporan *widgets* o parámetros recientes (`⚠️ sin verificar` en vivo).
+- Ninguno de los métodos que usa actualmente `bot-telegram/` (`getUpdates`, `setMyCommands`, `sendMessage`, `getChatMember`) depende de novedades introducidas entre `10.1` y `10.4` (todos ellos han sido verificados en vivo el `2026-11-21`), pero esta diferencia de versiones debe considerarse si en el futuro se incorporan *widgets* o parámetros recientes (`⚠️ sin verificar`).
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

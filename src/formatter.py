@@ -10,6 +10,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from src.models import ApiStatus, NewsItem, Priority, SourceInfo, Subscription, TypeInfo
 
 TELEGRAM_SAFE_MAX_LENGTH = 4000
+MAX_ITEM_TITLE_LENGTH = 300
+MAX_ITEM_URL_LENGTH = 2000
+_TRUNCATED_NOTICE = "<i>… listado truncado por límite de Telegram.</i>"
 
 
 def escape_html(text: str) -> str:
@@ -54,17 +57,18 @@ def _truncate_text(text: str, max_chars: int) -> str:
 def format_news_item(item: NewsItem, timezone_name: str = "Europe/Madrid") -> str:
     """Formatea una noticia individual cumpliendo el contrato mínimo de BOT_COMMANDS_CONTRACT."""
     badge = f"{item.priority.emoji} <b>{escape_html(item.priority.label_es.upper())}</b>"
-    type_tag = f"<code>#{escape_html(item.type or 'general')}</code>"
+    type_tag = f"<code>#{escape_html(_truncate_text(item.type or 'general', 64))}</code>"
     header = f"{badge} · {type_tag}"
 
     safe_url = safe_http_url(item.url)
-    title_html = escape_html(item.title or "Sin titular")
-    if safe_url is not None:
+    title_html = escape_html(_truncate_text(item.title or "Sin titular", MAX_ITEM_TITLE_LENGTH))
+    if safe_url is not None and len(safe_url) <= MAX_ITEM_URL_LENGTH:
         title_line = f'<a href="{escape_html(safe_url)}"><b>{title_html}</b></a>'
     else:
         title_line = f"<b>{title_html}</b>"
 
-    source_name = escape_html(item.source.name if item.source else "Fuente externa")
+    raw_source = item.source.name if item.source else "Fuente externa"
+    source_name = escape_html(_truncate_text(raw_source, 120))
     date_str = escape_html(format_datetime(item.published_at, timezone_name))
     meta_line = f"<i>{source_name}</i> · {date_str}"
 
@@ -72,14 +76,21 @@ def format_news_item(item: NewsItem, timezone_name: str = "Europe/Madrid") -> st
     snippet_text = item.snippet.strip() if item.snippet else ""
     if snippet_text:
         base_len = len(header) + len(title_line) + len(meta_line) + 12
-        budget = max(80, TELEGRAM_SAFE_MAX_LENGTH - base_len)
-        parts.append(escape_html(_truncate_text(snippet_text, min(320, budget))))
+        budget = TELEGRAM_SAFE_MAX_LENGTH - base_len
+        if budget >= 40:
+            parts.append(escape_html(_truncate_text(snippet_text, min(320, budget))))
 
     parts.append(meta_line)
     message = "\n\n".join(parts)
     if len(message) <= TELEGRAM_SAFE_MAX_LENGTH:
         return message
-    return message[: TELEGRAM_SAFE_MAX_LENGTH - 1] + "…"
+
+    # Fallback seguro: quitar enlace/extracto antes de truncar texto para nunca cortar tags HTML
+    fallback = "\n\n".join([header, f"<b>{title_html}</b>", meta_line])
+    if len(fallback) <= TELEGRAM_SAFE_MAX_LENGTH:
+        return fallback
+    plain_title = escape_html(_truncate_text(item.title or "Sin titular", 160))
+    return "\n\n".join([header, f"<b>{plain_title}</b>", meta_line])
 
 
 def format_news_list(
@@ -212,25 +223,28 @@ def format_sources(sources: list[SourceInfo], filter_type: str | None = None) ->
 
 def format_types(types: list[TypeInfo], priorities: list[Priority]) -> str:
     """Formatea la respuesta de /types."""
-    if not types:
-        type_block = "• <i>No hay tipos activos disponibles ahora mismo.</i>"
-    else:
-        type_block = "\n".join(
-            f"• <code>{escape_html(t.type)}</code> — {t.sources_count} fuente(s), "
-            f"{t.items_count} noticia(s)"
-            for t in types
-        )
-
     prio_block = "\n".join(
         f"• {p.emoji} <code>{p.value}</code> ({escape_html(p.label_es)})" for p in priorities
     )
+    footer = f"\n\n<b>Niveles de prioridad válidos</b>\n{prio_block}"
+    header = "<b>Tipos de fuente disponibles</b>"
 
-    return (
-        "<b>Tipos de fuente disponibles</b>\n"
-        f"{type_block}\n\n"
-        "<b>Niveles de prioridad válidos</b>\n"
-        f"{prio_block}"
-    )
+    if not types:
+        return f"{header}\n• <i>No hay tipos activos disponibles ahora mismo.</i>{footer}"
+
+    lines = [header]
+    max_body = TELEGRAM_SAFE_MAX_LENGTH - len(footer) - len(_TRUNCATED_NOTICE) - 2
+    for t in types:
+        entry = (
+            f"• <code>{escape_html(t.type)}</code> — {t.sources_count} fuente(s), "
+            f"{t.items_count} noticia(s)"
+        )
+        if len("\n".join(lines) + "\n" + entry) > max_body:
+            lines.append(_TRUNCATED_NOTICE)
+            break
+        lines.append(entry)
+
+    return "\n".join(lines) + footer
 
 
 def format_filters(subscriptions: list[Subscription], paused: bool) -> str:
@@ -248,10 +262,17 @@ def format_filters(subscriptions: list[Subscription], paused: bool) -> str:
             "Usa <code>/subscribe &lt;type|all&gt; [min_priority]</code> para activarlas."
         )
 
-    rows = "\n".join(
-        f"• <code>{escape_html(sub.source_type)}</code> — prioridad mínima: "
-        f"{sub.min_priority.emoji} <code>{sub.min_priority.value}</code> "
-        f"({escape_html(sub.min_priority.label_es)})"
-        for sub in subscriptions
-    )
-    return f"<b>Filtros del canal actual</b>\n\n{state_line}\n\n{rows}"
+    lines = [f"<b>Filtros del canal actual</b>\n\n{state_line}\n"]
+    max_len = TELEGRAM_SAFE_MAX_LENGTH - len(_TRUNCATED_NOTICE) - 2
+    for sub in subscriptions:
+        entry = (
+            f"• <code>{escape_html(sub.source_type)}</code> — prioridad mínima: "
+            f"{sub.min_priority.emoji} <code>{sub.min_priority.value}</code> "
+            f"({escape_html(sub.min_priority.label_es)})"
+        )
+        if len("\n".join(lines) + "\n" + entry) > max_len:
+            lines.append(_TRUNCATED_NOTICE)
+            break
+        lines.append(entry)
+
+    return "\n".join(lines)

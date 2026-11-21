@@ -289,3 +289,65 @@ class BotStorage:
             (str(item_id),),
         )
         await self._db().commit()
+
+    async def migrate_chat_id(self, old_chat_id: int, new_chat_id: int) -> None:
+        """Migra chats, suscripciones e historial de envíos tras un cambio a supergrupo."""
+        if old_chat_id == new_chat_id:
+            return
+
+        db = self._db()
+        cursor = await db.execute(
+            """
+            SELECT thread_id, title, is_paused, created_at, updated_at
+            FROM chats
+            WHERE chat_id = ?
+            """,
+            (old_chat_id,),
+        )
+        chat_rows = await cursor.fetchall()
+        now = _utc_now_iso()
+
+        for row in chat_rows:
+            await db.execute(
+                """
+                INSERT INTO chats (chat_id, thread_id, title, is_paused, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(chat_id, thread_id) DO UPDATE SET
+                    title = COALESCE(excluded.title, chats.title),
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    new_chat_id,
+                    int(row["thread_id"]),
+                    row["title"],
+                    int(row["is_paused"]),
+                    str(row["created_at"]),
+                    now,
+                ),
+            )
+
+        await db.execute(
+            """
+            INSERT OR REPLACE INTO subscriptions (
+                chat_id, thread_id, source_type, min_priority, min_priority_weight, created_at
+            )
+            SELECT ?, thread_id, source_type, min_priority, min_priority_weight, created_at
+            FROM subscriptions
+            WHERE chat_id = ?
+            """,
+            (new_chat_id, old_chat_id),
+        )
+
+        await db.execute(
+            """
+            INSERT OR IGNORE INTO dispatched_items (chat_id, thread_id, item_id, dispatched_at)
+            SELECT ?, thread_id, item_id, dispatched_at
+            FROM dispatched_items
+            WHERE chat_id = ?
+            """,
+            (new_chat_id, old_chat_id),
+        )
+
+        await db.execute("DELETE FROM dispatched_items WHERE chat_id = ?", (old_chat_id,))
+        await db.execute("DELETE FROM chats WHERE chat_id = ?", (old_chat_id,))
+        await db.commit()

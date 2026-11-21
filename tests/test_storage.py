@@ -88,3 +88,33 @@ async def test_dispatched_deduplication_and_watermark(tmp_path: Path) -> None:
         assert deleted == 1
     finally:
         await storage.close()
+
+
+async def test_migrate_chat_id_transfers_subscriptions_pause_and_dispatched(
+    tmp_path: Path,
+) -> None:
+    storage = BotStorage(tmp_path / "bot.db")
+    await storage.initialize()
+    try:
+        await storage.subscribe(-200, 0, "cve", Priority.HIGH, title="Grupo Antiguo")
+        await storage.subscribe(-200, 7, "iot", Priority.LOW, title="Topic IoT")
+        await storage.set_paused(-200, 7, True)
+        await storage.mark_dispatched(-200, 0, 501)
+
+        await storage.migrate_chat_id(-200, -100200)
+
+        assert await storage.list_subscriptions(-200, 0) == []
+        assert await storage.was_dispatched(-200, 0, 501) is False
+
+        subs_main = await storage.list_subscriptions(-100200, 0)
+        assert len(subs_main) == 1
+        assert subs_main[0].source_type == "cve"
+        assert subs_main[0].min_priority == Priority.HIGH
+
+        subs_topic = await storage.list_subscriptions(-100200, 7)
+        assert len(subs_topic) == 1
+        assert subs_topic[0].source_type == "iot"
+        assert await storage.is_paused(-100200, 7) is True
+        assert await storage.was_dispatched(-100200, 0, 501) is True
+    finally:
+        await storage.close()

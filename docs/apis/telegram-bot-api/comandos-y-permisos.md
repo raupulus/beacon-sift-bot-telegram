@@ -2,7 +2,7 @@
 
 - **Fuentes oficiales:** [`src/api.md`](./src/api.md) (`Determining list of commands`), [`src/setmycommands.md`](./src/setmycommands.md), [`src/botcommand.md`](./src/botcommand.md), [`src/getchatmember.md`](./src/getchatmember.md)
 - **Fecha de descarga:** `2026-11-20`
-- **Fecha de verificación real:** `2026-11-20` *(especificación descargada; verificación contra `api.telegram.org` `⚠️ sin verificar` sin `TELEGRAM_BOT_TOKEN` real)*
+- **Fecha de verificación real:** `2026-11-21` *(verificado en vivo `setMyCommands`/`getMyCommands` con los 11 comandos y `getChatMember` en supergrupo devolviendo `status=creator` aun siendo el bot `member`)*
 
 ---
 
@@ -55,8 +55,8 @@ Devuelve el objeto `ChatMember` con el rol y estado de un usuario concreto dentr
   - `"left"` → `ChatMemberStatus.LEFT`
   - `"kicked"` → `ChatMemberStatus.BANNED`
 
-> **`⚠️ sin verificar` en vivo:** la respuesta real de `getChatMember` en grupos con el bot sin rol de administrador (para confirmar el código exacto de `TelegramError`) queda pendiente de prueba con token y grupo real.
+> **Verificado (`2026-11-21`):** `setMyCommands` confirmó los 11 comandos y `getChatMember` devolvió `status=creator` en supergrupo real incluso con el bot como `member`.
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

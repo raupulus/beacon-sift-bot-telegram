@@ -58,8 +58,8 @@ Ejecutar siempre dentro de `bot-telegram/` (`uv` respeta `.python-version = 3.12
 |---|---|---|
 | Instalar / sincronizar entorno | `uv sync --python 3.12` | Crea/actualiza `.venv` con `uv.lock` y dependencias dev (`pytest`, `pytest-asyncio`, `ruff`). |
 | Linter (Ruff) | `uv run ruff check src tests` | `All checks passed!` (reglas `E`, `F`, `I`, `UP`, `B`, `SIM`, máx. 100 columnas). |
-| Verificación de formato | `uv run ruff format --check src tests` | `19 files already formatted` (o todos formateados). |
-| Suite de tests | `uv run pytest` | `14 passed` (6 módulos de test en `tests/`, con `asyncio_mode = "auto"`). |
+| Verificación de formato | `uv run ruff format --check src tests` | `21 files already formatted` (o todos formateados). |
+| Suite de tests | `uv run pytest` | `25 passed` (8 módulos de test en `tests/`, con `asyncio_mode = "auto"`). |
 | Arrancar el bot en local | `uv run python -m src.main` | Lee `.env`, inicializa SQLite, conecta a Reverb y arranca `run_polling`. Aborta con código `1` si falta `TELEGRAM_BOT_TOKEN`. |
 
 ---

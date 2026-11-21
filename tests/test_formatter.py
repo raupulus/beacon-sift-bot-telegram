@@ -141,3 +141,50 @@ def test_format_catalog_helpers() -> None:
         "Últimas noticias",
     )
     assert "Nota 1" in list_text
+
+
+def test_format_news_item_extreme_title_and_url_preserves_balanced_html() -> None:
+    item = NewsItem(
+        id=999,
+        title="<tag> & " + ("Titular extremo " * 300),
+        url="https://example.org/" + ("a" * 2500),
+        type="cve",
+        priority=Priority.CRITICAL,
+        priority_weight=4,
+        published_at=datetime(2026, 11, 21, 12, 0, tzinfo=UTC),
+        fetched_at=None,
+        snippet="Extracto " * 200,
+        source=SourceSummary(slug="src", name="Fuente " * 50, url="https://example.org"),
+    )
+
+    rendered = format_news_item(item)
+
+    assert len(rendered) <= TELEGRAM_SAFE_MAX_LENGTH
+    assert rendered.count("<b>") == rendered.count("</b>")
+    assert rendered.count("<i>") == rendered.count("</i>")
+    assert rendered.count("<code>") == rendered.count("</code>")
+    assert rendered.count("<a ") == rendered.count("</a>")
+
+
+def test_format_types_and_filters_truncate_under_telegram_limit() -> None:
+    many_types = [
+        TypeInfo(type=f"tipo_dinamico_{i:03d}", sources_count=2, items_count=10) for i in range(150)
+    ]
+    rendered_types = format_types(many_types, list(Priority))
+    assert len(rendered_types) <= TELEGRAM_SAFE_MAX_LENGTH
+    assert "truncado por límite de Telegram" in rendered_types
+    assert "Niveles de prioridad válidos" in rendered_types
+
+    many_subs = [
+        Subscription(
+            chat_id=-1001,
+            thread_id=0,
+            source_type=f"categoria_larga_{i:03d}",
+            min_priority=Priority.MEDIUM,
+            min_priority_weight=2,
+        )
+        for i in range(150)
+    ]
+    rendered_filters = format_filters(many_subs, paused=False)
+    assert len(rendered_filters) <= TELEGRAM_SAFE_MAX_LENGTH
+    assert "truncado por límite de Telegram" in rendered_filters

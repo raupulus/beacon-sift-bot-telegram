@@ -69,7 +69,7 @@ bot-telegram/
 │   ├── permissions.py               # Verificación de admins de grupo/canal y TELEGRAM_ADMIN_IDS
 │   ├── dispatcher.py                # Filtrado, deduplicación y manejo de RetryAfter/Forbidden
 │   └── handlers/                    # info.py y subscriptions.py
-└── tests/                           # Tests automatizados pytest / pytest-asyncio (14 tests)
+└── tests/                           # Tests automatizados pytest / pytest-asyncio (25 tests)
 ```
 
 ### Reglas de aislamiento y ecosistema `beacon-sift`
@@ -151,12 +151,10 @@ Protocolo obligatorio aplicable a **todas** las tareas presentes y futuras en es
 | Trampa | Módulos afectados | Efecto / Cómo evitarla |
 |---|---|---|
 | Python del sistema != `3.12` | Entorno local (`uv`) | Usar siempre `uv run ...` o `uv sync --python 3.12` para respetar `.python-version = 3.12`. |
-| `getChatMember` en grupos | `permissions.py` | Telegram solo garantiza consultar otros miembros si el bot es **admin del chat** (`⚠️ sin verificar` en vivo). |
-| `prune_dispatched()` sin programar | `storage.py` | Existe el método y test, pero ningún flujo en `src/` lo invoca periódicamente aún. |
-| Grupos migrados a supergrupo | `dispatcher.py`, `storage.py` | `ChatMigrated` (`migrate_to_chat_id`) cae en `TelegramError` genérico sin migrar filas `(chat_id)` en SQLite. |
-| Corte duro en `format_news_item` | `formatter.py` | Si titular + URL superaran ~3900 chars, el slice `[:3999]` podría cortar HTML abierto; truncar `title` si se amplía. |
+| `getChatMember` en grupos | `permissions.py` | Telegram solo garantiza consultar otros miembros si el bot es **admin del chat** (en prueba real del `2026-11-21` funcionó también como `member` en supergrupo, pero en producción conviene otorgar rol admin). |
+| `RetryAfter.retry_after` en PTB v23+ | `dispatcher.py` | `python-telegram-bot >= 22.2` depreca `int`/`float` en favor de `datetime.timedelta`; `dispatcher.py` soporta ambos tipos. |
 | Última palabra en `/search` | `handlers/info.py` | Con >= 2 palabras tras quitar `limit`, si la última coincide con un `type` activo se trata como filtro `[type]`. |
-| Flujos Telegram en vivo sin token | `main.py`, `dispatcher.py`, `permissions.py` | Transport HTTPS/401 verificado contra `api.telegram.org`, pero las llamadas con `TELEGRAM_BOT_TOKEN` siguen `⚠️ sin verificar`. |
+| Escenarios Telegram aún sin probar en vivo | `main.py`, `dispatcher.py`, `permissions.py` | `getMe`, `setMyCommands`, `getUpdates`, `sendMessage` HTML y `getChatMember` verificados (`2026-11-21`); `channel_post`, *topics* foro (`message_thread_id`) y `429`/`403` bajo carga real siguen `⚠️ sin verificar`. |
 
 ### Checklist antes de dar cualquier tarea por terminada
 - [ ] Documentación del módulo tocado actualizada en el **mismo commit**

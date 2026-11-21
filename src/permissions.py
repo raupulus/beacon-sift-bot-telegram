@@ -35,6 +35,15 @@ async def can_manage_subscriptions(
     if chat.type == ChatType.PRIVATE:
         return settings.allow_private_subscriptions
 
+    message = update.effective_message
+    sender_chat = getattr(message, "sender_chat", None)
+    if (
+        chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}
+        and sender_chat is not None
+        and getattr(sender_chat, "id", None) == chat.id
+    ):
+        return True
+
     if user is None:
         return False
 

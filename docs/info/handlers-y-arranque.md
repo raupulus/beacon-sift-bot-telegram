@@ -31,6 +31,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 2. `build_application(settings)` crea `BotStorage`, `BeaconApiClient`, `Application` con hooks `post_init` / `post_shutdown`, `AlertDispatcher`, `ReverbListener`, guarda `BotAppContext` en `bot_data["app_ctx"]` y registra los 11 handlers (`register_handlers`).
 3. `post_init(app)`:
    - `await storage.initialize()`
+   - `await storage.prune_dispatched(keep_last=5000)`
    - `await app.bot.set_my_commands(BOT_COMMANDS)`
    - Arranca tarea `asyncio` `"reverb-listener"` con `stop_event`.
 4. `post_shutdown(app)`: activa `stop_event`, cancela `"reverb-listener"`, cierra `api_client` y `storage`.
@@ -75,7 +76,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 
 - **Desambiguación de `[type]` en `/search <query> [type] [limit]` (`info.py` líneas 182–188):** si hay al menos dos palabras restantes tras extraer `limit`, consulta `/api/v1/types` y toma el último token como `source_type` si coincide con un tipo activo. Buscar literalmente `"kernel linux"` cuando `"linux"` es tipo activo filtrará por `#linux` buscando `"kernel"`.
 - **`update.effective_chat` `None`:** en `subscriptions.py` (`subscribe`, `unsubscribe`, `filters`, `pause`, `resume`), si `chat is None` retornan silenciosamente sin responder.
-- **`post_init` / `main()` con token real `⚠️ sin verificar`:** no ejecutado aún contra `api.telegram.org` por falta de `TELEGRAM_BOT_TOKEN`.
+- **`setMyCommands` y `getUpdates` verificados en vivo (`2026-11-21`):** confirmados los 11 comandos registrados y polling `Update.ALL_TYPES` contra `api.telegram.org`; quedan `⚠️ sin verificar` en vivo el flujo interactivo completo con `channel_post` y *topics* de supergrupo foro.
 
 ---
 
@@ -85,16 +86,15 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
   - `test_all_info_commands_and_validation` (`/help`, `/status`, `/sources`, `/types`, `/latest`, límite `1..10`, `/search` con tipo/sin resultados/sin args).
   - `test_info_commands_handle_unavailable_api` (`/status` degradado y `/latest` con API caída `503`).
   - `test_subscription_commands_permissions_and_lifecycle` (permisos grupo/privado/admin/`channel_post`, validación de tipo inexistente, `/subscribe`, `/pause`, `/filters`, `/resume`, `/unsubscribe`).
-
-> Nota: `main.py` (`build_application`, `post_init`, `post_shutdown`) no tiene test dedicado propio; solo import test en imagen Docker y compilación.
+- [`tests/test_main_and_config.py`](../../tests/test_main_and_config.py):
+  - `test_build_application_post_init_and_post_shutdown` (ciclo completo `build_application`, `post_init`, `set_my_commands(BOT_COMMANDS)` y cancelación de `reverb-listener` en `post_shutdown`).
 
 ---
 
 ## 9. Pendiente real
 
-- Probar arranque completo `python -m src.main` con un `TELEGRAM_BOT_TOKEN` real contra `api.telegram.org` (`set_my_commands`, polling, `channel_post` y *topics*).
-- Valorar test unitario ligero para `build_application()` / `post_init` / `post_shutdown`.
+- Validar en vivo comandos interactivos en canal (`channel_post`) y en supergrupo con modo foro (*topics* `message_thread_id`) (`⚠️ sin verificar`).
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

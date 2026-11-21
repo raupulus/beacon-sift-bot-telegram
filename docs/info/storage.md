@@ -11,7 +11,7 @@
 - **NO hace:**
   - No almacena artículos completos, fuentes ni credenciales de Telegram.
   - No accede ni replica datos de la base PostgreSQL de `web/`.
-  - No ejecuta limpieza periódica automática en segundo plano (aunque expone el método `prune_dispatched()`).
+  - No gestiona hilos o cron propios (la poda `prune_dispatched()` es invocada por `main.py` al arranque y por `AlertDispatcher` periódicamente).
 
 ---
 
@@ -43,7 +43,7 @@ Esquema creado por `BotStorage.initialize()` ([`src/storage.py#L34-L74`](../../s
 Clase `BotStorage(db_path: str | Path)`:
 - Ciclo de vida: `initialize()`, `close()`.
 - Suscripciones y pausa: `subscribe()`, `unsubscribe()` (soporta `'all'` y devuelve `cursor.rowcount`), `list_subscriptions()` (ordena `'all'` primero y luego alfabéticamente), `set_paused()`, `is_paused()`, `get_matching_targets()`.
-- Deduplicación y cursor: `was_dispatched()`, `mark_dispatched()`, `prune_dispatched(keep_last=5000)`, `get_last_item_id()`, `set_last_item_id()`.
+- Deduplicación y cursor: `was_dispatched()`, `mark_dispatched()`, `prune_dispatched(keep_last=5000)`, `get_last_item_id()`, `set_last_item_id()`, `migrate_chat_id(old_chat_id, new_chat_id)`.
 
 > No implementa autorización propia; asume que los *handlers* ya validaron permisos antes de mutar estado.
 
@@ -68,7 +68,6 @@ Clase `BotStorage(db_path: str | Path)`:
 
 - **Llamar antes de `initialize()`:** cualquier método privado `_db()` lanza `RuntimeError("BotStorage no inicializado; llama antes a initialize().")`.
 - **Diferencia entre `subscribe()` y `unsubscribe()` con `'all'`:** `subscribe(..., 'all', ...)` guarda una regla explícita con `source_type = 'all'`; `unsubscribe(..., 'all')` elimina **todas** las filas del destino (tanto reglas específicas como la regla `'all'`).
-- **Crecimiento de `dispatched_items`:** aunque existe `prune_dispatched(keep_last=5000)`, actualmente **ningún módulo en `src/` lo invoca**, por lo que la tabla crece indefinidamente hasta añadir una llamada periódica.
 - **No hay migraciones automáticas de esquema:** cambiar columnas en versiones futuras requerirá sentencias `ALTER TABLE` o migración explícita si ya existe `bot.db` en `./data`.
 
 ---
@@ -79,13 +78,14 @@ Clase `BotStorage(db_path: str | Path)`:
   - `test_subscribe_update_and_unsubscribe` (alta, actualización de prioridad, borrado unitario y borrado masivo con `'all'`).
   - `test_matching_targets_respects_priority_pause_and_dedup` (filtrado por peso de prioridad, *topics* con `thread_id`, exclusión de chats pausados, deduplicación cuando coincide regla específica y `'all'`).
   - `test_dispatched_deduplication_and_watermark` (no retroceso del cursor, idempotencia de `mark_dispatched` y `prune_dispatched(keep_last=1)`).
+  - `test_migrate_chat_id_transfers_subscriptions_pause_and_dispatched` (migración atómica de grupo clásico a supergrupo conservando *topics*, pausa y deduplicación).
 
 ---
 
 ## 9. Pendiente real
 
-- Invocar periódicamente `storage.prune_dispatched()` (por ejemplo al arranque en `post_init` o cada N alertas enviadas) para acotar el tamaño histórico de `dispatched_items`.
+- Ninguno crítico actualmente (la poda periódica ya está conectada en `post_init` y `AlertDispatcher`, y `migrate_chat_id()` cubre migraciones a supergrupo).
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

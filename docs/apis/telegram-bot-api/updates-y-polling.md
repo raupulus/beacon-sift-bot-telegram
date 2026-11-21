@@ -2,7 +2,7 @@
 
 - **Fuentes oficiales:** [`src/api.md`](./src/api.md) (`Getting updates`), [`src/getupdates.md`](./src/getupdates.md)
 - **Fecha de descarga:** `2026-11-20`
-- **Fecha de verificación real:** `2026-11-20` *(especificación descargada; flujo `getUpdates` en vivo `⚠️ sin verificar` por ausencia de `TELEGRAM_BOT_TOKEN` real)*
+- **Fecha de verificación real:** `2026-11-21` *(verificado en vivo `getWebhookInfo` sin webhook y `getUpdates(limit=5, timeout=1, allowed_updates=Update.ALL_TYPES)` recibiendo updates reales de supergrupo; `channel_post` en canal real `⚠️ sin verificar`)*
 
 ---
 
@@ -36,8 +36,8 @@ En `src/main.py` se arranca `application.run_polling(allowed_updates=Update.ALL_
 - Chats privados, grupos y supergrupos (`Update.message` y mensajes editados según handlers).
 - Canales de difusión donde administradores envían comandos directamente como publicaciones del canal (`Update.channel_post`, `Update.edited_channel_post`), contemplado explícitamente en `src/permissions.py` y `src/handlers/__init__.py`.
 
-> **`⚠️ sin verificar` en vivo:** la recepción real de `channel_post` y `message_thread_id` desde servidores de Telegram queda pendiente de prueba con un token y canal reales.
+> **Verificado (`2026-11-21`):** `getUpdates` con `Update.ALL_TYPES` funciona en vivo sobre supergrupo sin conflicto; la recepción real de `channel_post` y `message_thread_id` en foro queda `⚠️ sin verificar`.
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

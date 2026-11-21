@@ -2,7 +2,7 @@
 
 - **Fuentes oficiales:** [`src/sendmessage.md`](./src/sendmessage.md), [`src/formatting.md`](./src/formatting.md), [`src/linkpreviewoptions.md`](./src/linkpreviewoptions.md), [`src/responseparameters.md`](./src/responseparameters.md)
 - **Fecha de descarga:** `2026-11-20`
-- **Fecha de verificación real:** `2026-11-20` *(especificación descargada; envío real de `sendMessage` con `parse_mode=HTML` y `message_thread_id` `⚠️ sin verificar` sin token real)*
+- **Fecha de verificación real:** `2026-11-21` *(verificado en vivo `sendMessage` con `parse_mode=HTML`, entidades `&lt;`/`&gt;`/`&amp;`/`&#x27;` y `LinkPreviewOptions(is_disabled=True)` en supergrupo real; `message_thread_id` en foro `⚠️ sin verificar`)*
 
 ---
 
@@ -59,8 +59,8 @@ Al pasar `parse_mode="HTML"`, Telegram acepta únicamente este subconjunto de et
 - **`403 Forbidden`:** bot bloqueado por usuario o expulsado/sin permisos de escritura en canal o grupo (`Forbidden` en `python-telegram-bot`).
 - **`parameters.migrate_to_chat_id`:** cuando un grupo pasa a supergrupo, cambia a un ID de hasta 52 bits (`ChatMigrated`).
 
-> **`⚠️ sin verificar` en vivo:** la renderización visual exacta de noticias largas en clientes Telegram y la entrega en *topics* con `message_thread_id` quedan pendientes de validación con un `TELEGRAM_BOT_TOKEN` real.
+> **Verificado (`2026-11-21`):** `sendMessage` con `ParseMode.HTML`, `html.escape(..., quote=True)` (`&#x27;`) y `LinkPreviewOptions(is_disabled=True)` confirmado en supergrupo real; la entrega en *topics* con `message_thread_id` de foro queda `⚠️ sin verificar`.
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21
