@@ -33,7 +33,6 @@ Guía verificada directamente contra [`Dockerfile`](../../Dockerfile), [`docker-
    ```
 2. Rellenar en `.env` al menos:
    - `TELEGRAM_BOT_TOKEN`
-   - `TELEGRAM_ADMIN_IDS` (IDs numéricos separados por coma)
    - `WEB_API_BASE_URL` y `REVERB_WS_URL` apuntando al servicio `web/` accesible desde el contenedor *(nota: dentro de Docker, `127.0.0.1` apunta al propio contenedor del bot, no al host; usar URL pública `https://...` / `wss://...` o `host.docker.internal` / red compartida según topología del VPS)*
    - `REVERB_APP_KEY` y `REVERB_CHANNEL` coincidentes con `web/`
 3. Construir y levantar en segundo plano:
@@ -48,11 +47,11 @@ Guía verificada directamente contra [`Dockerfile`](../../Dockerfile), [`docker-
 
 ---
 
-## 4. Persistencia SQLite y permisos de `./data`
+## 4. Persistencia SQLite con volumen nombrado
 
-- [`docker-compose.yml`](../../docker-compose.yml) monta `./data:/app/data` con política `restart: unless-stopped`.
-- Como la imagen fija `ENV BOT_DB_PATH=/app/data/bot.db` y corre como `botuser`, si creas `./data` previamente como `root` en un VPS Linux, asegúrate de que el proceso `botuser` del contenedor tenga permiso de escritura sobre `./data` (donde SQLite WAL creará `bot.db`, `bot.db-wal` y `bot.db-shm`).
-- **Copia de seguridad recomendada:** al usar modo WAL, realiza backup en frío parando el contenedor o usando `.backup` de `sqlite3` sobre `./data/bot.db` en lugar de copiar solo el fichero principal en caliente sin `-wal`/`-shm`.
+- [`docker-compose.yml`](../../docker-compose.yml) monta el volumen nombrado `bot_telegram_data:/app/data`, fija `BOT_DB_PATH=/app/data/bot.db` y configura `restart: unless-stopped`.
+- Al usar un **volumen nombrado** en lugar de un *bind-mount* `./data`, Docker inicializa automáticamente el volumen heredando los permisos `botuser:botuser` definidos en el [`Dockerfile`](../../Dockerfile), evitando errores `readonly database` en servidores Linux VPS al recrear o actualizar el contenedor.
+- **Copia de seguridad recomendada:** al usar modo WAL (`bot.db`, `bot.db-wal`, `bot.db-shm`), realiza el backup usando `.backup` de `sqlite3` dentro del contenedor o parando el servicio brevemente antes de copiar el volumen.
 
 ---
 
@@ -66,4 +65,4 @@ docker compose logs --tail=50 bot-telegram
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-20
+> Creado: 2026-11-20 · Última revisión: 2026-11-21

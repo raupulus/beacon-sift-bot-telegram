@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     )
 
     telegram_bot_token: str = ""
-    telegram_admin_ids: str = ""
     allow_private_subscriptions: bool = False
     telegram_disable_web_preview: bool = True
 
@@ -40,17 +39,3 @@ class Settings(BaseSettings):
     @classmethod
     def _normalize_log_level(cls, value: object) -> str:
         return str(value or "INFO").strip().upper()
-
-    @property
-    def admin_ids(self) -> set[int]:
-        """Devuelve los IDs numéricos de administradores globales configurados."""
-        ids: set[int] = set()
-        for chunk in self.telegram_admin_ids.split(","):
-            clean = chunk.strip()
-            if not clean:
-                continue
-            try:
-                ids.add(int(clean))
-            except ValueError:
-                continue
-        return ids

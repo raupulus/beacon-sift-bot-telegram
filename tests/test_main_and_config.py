@@ -13,14 +13,12 @@ from src.main import build_application
 from src.models import _parse_iso_datetime
 
 
-def test_settings_admin_ids_and_iso_datetime_parsing() -> None:
+def test_settings_normalization_and_iso_datetime_parsing() -> None:
     settings = Settings(
-        telegram_admin_ids=" 1001, abc , , 2002 ,-5 ",
         web_api_base_url="https://feed.raupulus.dev///",
         reverb_ws_url="wss://feed.raupulus.dev/",
         log_level=" debug ",
     )
-    assert settings.admin_ids == {1001, 2002, -5}
     assert settings.web_api_base_url == "https://feed.raupulus.dev"
     assert settings.reverb_ws_url == "wss://feed.raupulus.dev"
     assert settings.log_level == "DEBUG"

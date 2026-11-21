@@ -162,7 +162,7 @@ async def test_all_info_commands_and_validation(tmp_path: Path) -> None:
     storage = BotStorage(tmp_path / "bot.db")
     await storage.initialize()
     api_client = BeaconApiClient("http://localhost:8000", transport=_api_transport())
-    settings = Settings(telegram_admin_ids="999")
+    settings = Settings()
     dispatcher = AlertDispatcher(SimpleNamespace(), storage, settings)
     reverb = ReverbListener(
         "ws://localhost:8080", "k", "beacon.news", api_client, storage, dispatcher.dispatch_item
@@ -236,7 +236,7 @@ async def test_subscription_commands_permissions_and_lifecycle(tmp_path: Path) -
     storage = BotStorage(tmp_path / "bot.db")
     await storage.initialize()
     api_client = BeaconApiClient("http://localhost:8000", transport=_api_transport())
-    settings = Settings(telegram_admin_ids="999", allow_private_subscriptions=False)
+    settings = Settings(allow_private_subscriptions=False)
     dispatcher = AlertDispatcher(SimpleNamespace(), storage, settings)
     reverb = ReverbListener(
         "ws://localhost:8080", "k", "beacon.news", api_client, storage, dispatcher.dispatch_item

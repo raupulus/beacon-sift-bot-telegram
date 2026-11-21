@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import aiosqlite
@@ -246,18 +246,12 @@ class BotStorage:
         )
         await self._db().commit()
 
-    async def prune_dispatched(self, keep_last: int = 5000) -> int:
-        """Conserva únicamente los últimos N registros de deduplicación."""
+    async def prune_dispatched(self, retention_days: int = 30) -> int:
+        """Elimina registros de deduplicación más antiguos que `retention_days` días."""
+        cutoff = (datetime.now(UTC) - timedelta(days=max(0, retention_days))).isoformat()
         cursor = await self._db().execute(
-            """
-            DELETE FROM dispatched_items
-            WHERE rowid NOT IN (
-                SELECT rowid FROM dispatched_items
-                ORDER BY dispatched_at DESC, rowid DESC
-                LIMIT ?
-            )
-            """,
-            (max(0, keep_last),),
+            "DELETE FROM dispatched_items WHERE dispatched_at < ?",
+            (cutoff,),
         )
         await self._db().commit()
         return cursor.rowcount

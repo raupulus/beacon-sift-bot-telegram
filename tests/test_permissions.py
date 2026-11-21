@@ -62,17 +62,25 @@ async def test_get_chat_member_telegram_error_denies_safely() -> None:
     assert await can_manage_subscriptions(u, _make_context(raise_error=True), settings) is False
 
 
-async def test_global_admin_and_private_chat_flag() -> None:
-    u_priv = _make_update(chat_id=77, chat_type=ChatType.PRIVATE, user_id=77)
+async def test_channel_post_group_owner_and_private_chat_flag() -> None:
+    u_channel = _make_update(
+        chat_id=-10080, chat_type=ChatType.CHANNEL, user_id=None, channel_post=True
+    )
+    assert await can_manage_subscriptions(u_channel, _make_context(), Settings()) is True
 
+    u_owner = _make_update(chat_id=-10081, chat_type=ChatType.SUPERGROUP, user_id=42)
+    assert (
+        await can_manage_subscriptions(
+            u_owner, _make_context(status=ChatMemberStatus.OWNER), Settings()
+        )
+        is True
+    )
+
+    u_priv = _make_update(chat_id=77, chat_type=ChatType.PRIVATE, user_id=77)
     assert await can_manage_subscriptions(u_priv, _make_context(), Settings()) is False
     assert (
         await can_manage_subscriptions(
             u_priv, _make_context(), Settings(allow_private_subscriptions=True)
         )
-        is True
-    )
-    assert (
-        await can_manage_subscriptions(u_priv, _make_context(), Settings(telegram_admin_ids="77"))
         is True
     )

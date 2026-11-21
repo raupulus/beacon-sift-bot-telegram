@@ -6,7 +6,8 @@
 
 - **Hace:**
   - Evalúa qué destinos `(chat_id, thread_id)` deben recibir una noticia `NewsItem` nueva según las suscripciones dinámicas configuradas en cada chat.
-  - Evita envíos duplicados consultando y actualizando `dispatched_items` en `BotStorage`, y dispara poda periódica (`prune_dispatched`) cada `prune_every` entregas (por defecto `100`, conservando `5000` registros).
+  - Reparte de forma concurrente y acotada (`max_concurrency=10`, cadencia global `min_interval_seconds=0.04` ≈ 25 msg/s) para escalar a cientos/miles de grupos sin que un `RetryAfter` en un chat bloquee el resto.
+  - Evita envíos duplicados consultando y actualizando `dispatched_items` en `BotStorage`, y dispara poda periódica por antigüedad (`prune_dispatched(retention_days=30)`) cada `prune_every` entregas (por defecto `250`).
   - Formatea el mensaje HTML y aplica `LinkPreviewOptions(is_disabled=...)` y `message_thread_id` (cuando `thread_id > 0`).
   - Gestiona errores de Telegram por destino: migra automáticamente el `chat_id` en SQLite y reintenta ante `ChatMigrated`, espera y reintenta una vez ante `RetryAfter` (soportando `int`/`float` y `timedelta`), y auto-pausa el destino ante `Forbidden`.
 - **NO hace:**
@@ -27,10 +28,11 @@ No define tablas propias; opera sobre `NewsItem` y `ChatTarget` de [`src/models.
    - Consulta `targets = await self.storage.get_matching_targets(item.type, item.priority_weight)` (solo destinos con `is_paused = 0` cuya suscripción coincida con `item.type` o `'all'` y `min_priority_weight <= item.priority_weight`).
    - Si no hay destinos, retorna `0` inmediatamente (sin formatear).
    - Renderiza `text = format_news_item(item, self.settings.bot_timezone)` una sola vez.
-   - Para cada `target`:
+   - Lanza `_deliver_one(target)` concurrentemente con `asyncio.Semaphore(self.max_concurrency)` y regulación global `_acquire_rate_slot()`:
      - Si `await self.storage.was_dispatched(target.chat_id, target.thread_id, item.id)` → omite.
      - Llama a `_send_with_retry(...)`, que devuelve el `chat_id` efectivo entregado (`int | None`).
-     - Si tuvo éxito (`sent_chat_id is not None`) → `await self.storage.mark_dispatched(sent_chat_id, target.thread_id, item.id)`, incrementa `delivered` y dispara `prune_dispatched()` cada `prune_every` entregas.
+     - Si tuvo éxito (`sent_chat_id is not None`) → `await self.storage.mark_dispatched(sent_chat_id, target.thread_id, item.id)`.
+   - Al finalizar el lote, acumula `delivered` y dispara `prune_dispatched(retention_days=self.prune_retention_days)` cada `prune_every` entregas.
 2. `_send_with_retry(...)`:
    - Envía `bot.send_message(chat_id=..., text=..., parse_mode=ParseMode.HTML, link_preview_options=...)` añadiendo `message_thread_id=thread_id` solo si `thread_id > 0`.
    - **`ChatMigrated`:** registra `INFO`, ejecuta `await self.storage.migrate_chat_id(chat_id, exc.new_chat_id)` y reintenta el envío contra `exc.new_chat_id`.
@@ -42,7 +44,7 @@ No define tablas propias; opera sobre `NewsItem` y `ChatTarget` de [`src/models.
 
 ## 4. Puntos de entrada (con auth, permisos y límites)
 
-- `AlertDispatcher(bot, storage, settings, *, prune_every=100, prune_keep_last=5000)`
+- `AlertDispatcher(bot, storage, settings, *, prune_every=250, prune_retention_days=30, max_concurrency=10, min_interval_seconds=0.04)`
 - `async def dispatch_item(self, item: NewsItem) -> int` *(invocado como callback `on_item` por `ReverbListener`)*
 
 Límites aplicados:
@@ -69,7 +71,6 @@ Límites aplicados:
 ## 7. Trampas conocidas
 
 - **Desfase cuando `retry_after > 15s`:** al limitar la espera a 15 s, si Telegram exige un `retry_after` mayor (ej. 30 s) el reintento volverá a fallar y la alerta no se reintentará automáticamente (`⚠️ sin verificar` bajo carga real).
-- **Bloqueo secuencial de bucle:** un `RetryAfter` en un destino bloquea la corrutina de `dispatch_item()` (y por tanto el bucle de recepción de `ReverbListener`) hasta 15 segundos para los destinos restantes de ese lote.
 - **Envío real a Telegram:** `sendMessage` con `ParseMode.HTML` y `LinkPreviewOptions(is_disabled=True)` verificado en vivo el `2026-11-21` en supergrupo real; `message_thread_id`, `channel_post` y `RetryAfter`/`Forbidden` reales en producción siguen `⚠️ sin verificar`.
 
 ---
@@ -86,7 +87,7 @@ Límites aplicados:
 
 ## 9. Pendiente real
 
-- Evaluar un limitador proactivo de cadencia (~20 msg/min por grupo / <30 msg/s global según [`LIMITACIONES.md`](../apis/telegram-bot-api/LIMITACIONES.md)) si crece el volumen de canales simultáneos.
+- Validar en producción el comportamiento bajo carga con cientos/miles de grupos simultáneos (`⚠️ sin verificar` en vivo).
 
 ---
 

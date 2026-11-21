@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -13,7 +14,7 @@ from telegram.error import ChatMigrated, Forbidden, RetryAfter, TelegramError
 
 from src.config import Settings
 from src.formatter import format_news_item
-from src.models import NewsItem
+from src.models import ChatTarget, NewsItem
 from src.storage import BotStorage
 
 logger = logging.getLogger(__name__)
@@ -28,15 +29,32 @@ class AlertDispatcher:
         storage: BotStorage,
         settings: Settings,
         *,
-        prune_every: int = 100,
-        prune_keep_last: int = 5000,
+        prune_every: int = 250,
+        prune_retention_days: int = 30,
+        max_concurrency: int = 10,
+        min_interval_seconds: float = 0.04,
     ) -> None:
         self.bot = bot
         self.storage = storage
         self.settings = settings
         self.prune_every = max(1, prune_every)
-        self.prune_keep_last = max(1, prune_keep_last)
+        self.prune_retention_days = max(0, prune_retention_days)
+        self.max_concurrency = max(1, max_concurrency)
+        self.min_interval_seconds = max(0.0, min_interval_seconds)
         self._delivered_since_prune = 0
+        self._rate_lock = asyncio.Lock()
+        self._next_send_at = 0.0
+
+    async def _acquire_rate_slot(self) -> None:
+        """Regula el ritmo global de envíos para respetar los límites de difusión de Telegram."""
+        if self.min_interval_seconds <= 0:
+            return
+        async with self._rate_lock:
+            now = time.monotonic()
+            if now < self._next_send_at:
+                await asyncio.sleep(self._next_send_at - now)
+                now = time.monotonic()
+            self._next_send_at = now + self.min_interval_seconds
 
     async def dispatch_item(self, item: NewsItem) -> int:
         """Envía una noticia nueva a todos los destinos que cumplan tipo, prioridad y pausa."""
@@ -46,25 +64,34 @@ class AlertDispatcher:
 
         text = format_news_item(item, self.settings.bot_timezone)
         preview_options = LinkPreviewOptions(is_disabled=self.settings.telegram_disable_web_preview)
-        delivered = 0
+        semaphore = asyncio.Semaphore(self.max_concurrency)
 
-        for target in targets:
-            if await self.storage.was_dispatched(target.chat_id, target.thread_id, item.id):
-                continue
+        async def _deliver_one(target: ChatTarget) -> bool:
+            async with semaphore:
+                if await self.storage.was_dispatched(target.chat_id, target.thread_id, item.id):
+                    return False
 
-            sent_chat_id = await self._send_with_retry(
-                chat_id=target.chat_id,
-                thread_id=target.thread_id,
-                text=text,
-                preview_options=preview_options,
-            )
-            if sent_chat_id is not None:
+                await self._acquire_rate_slot()
+                sent_chat_id = await self._send_with_retry(
+                    chat_id=target.chat_id,
+                    thread_id=target.thread_id,
+                    text=text,
+                    preview_options=preview_options,
+                )
+                if sent_chat_id is None:
+                    return False
+
                 await self.storage.mark_dispatched(sent_chat_id, target.thread_id, item.id)
-                delivered += 1
-                self._delivered_since_prune += 1
-                if self._delivered_since_prune >= self.prune_every:
-                    self._delivered_since_prune = 0
-                    await self.storage.prune_dispatched(keep_last=self.prune_keep_last)
+                return True
+
+        results = await asyncio.gather(*(_deliver_one(target) for target in targets))
+        delivered = sum(1 for ok in results if ok)
+
+        if delivered > 0:
+            self._delivered_since_prune += delivered
+            if self._delivered_since_prune >= self.prune_every:
+                self._delivered_since_prune = 0
+                await self.storage.prune_dispatched(retention_days=self.prune_retention_days)
 
         return delivered
 

@@ -17,26 +17,25 @@
 
 No define tablas ni modelos propios. Evalúa:
 - `update.channel_post`, `update.edited_channel_post`, `update.effective_user`, `update.effective_chat` (`telegram.Update`).
-- `Settings.admin_ids` y `Settings.allow_private_subscriptions`.
+- `Settings.allow_private_subscriptions`.
 - `ChatMemberStatus.ADMINISTRATOR` y `ChatMemberStatus.OWNER` de `telegram.constants`.
 
 ---
 
 ## 3. Flujos principales
 
-Orden estricto de evaluación en [`can_manage_subscriptions()`](../../src/permissions.py#L17-L50):
+Orden estricto de evaluación en [`can_manage_subscriptions()`](../../src/permissions.py#L17-L56):
 
-1. Si `update.channel_post is not None` o `update.edited_channel_post is not None` → devuelve **`True`** *(en canales de Telegram solo publican administradores del canal, aunque `effective_user` sea `None`)*.
-2. Si `user` existe y `user.id in settings.admin_ids` → devuelve **`True`** *(superadministrador global del bot)*.
-3. Si `chat is None` → devuelve **`False`**.
-4. Si `chat.type == ChatType.PRIVATE` → devuelve **`settings.allow_private_subscriptions`** (`False` por defecto).
-5. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}` y `update.effective_message.sender_chat.id == chat.id` → devuelve **`True`** *(administrador anónimo publicando con identidad del propio grupo/supergrupo)*.
-6. Si `user is None` → devuelve **`False`**.
-7. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}`:
+1. Si `update.channel_post is not None` o `update.edited_channel_post is not None` → devuelve **`True`** *(en canales de Telegram solo publican dueño y administradores del canal, aunque `effective_user` sea `None`)*.
+2. Si `chat is None` → devuelve **`False`**.
+3. Si `chat.type == ChatType.PRIVATE` → devuelve **`settings.allow_private_subscriptions`** (`False` por defecto).
+4. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}` y `update.effective_message.sender_chat.id == chat.id` → devuelve **`True`** *(administrador anónimo publicando con identidad del propio grupo/supergrupo)*.
+5. Si `user is None` → devuelve **`False`**.
+6. Si `chat.type in {ChatType.GROUP, ChatType.SUPERGROUP}`:
    - Llama a `await context.bot.get_chat_member(chat.id, user.id)`.
    - Ante `TelegramError`, registra log `WARNING` en inglés (`Failed to verify member %s in chat %s: %s`) y devuelve **`False`**.
    - Devuelve `True` solo si `member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}`.
-8. Cualquier otro tipo de chat → **`False`**.
+7. Cualquier otro tipo de chat → **`False`**.
 
 ---
 
@@ -57,8 +56,7 @@ Orden estricto de evaluación en [`can_manage_subscriptions()`](../../src/permis
 
 | Variable (`.env`) | Atributo `Settings` | Valor por defecto | Efecto |
 |---|---|---|---|
-| `TELEGRAM_ADMIN_IDS` | `telegram_admin_ids` (`admin_ids`) | `""` | IDs con bypass administrativo global en cualquier chat o privado. |
-| `ALLOW_PRIVATE_SUBSCRIPTIONS` | `allow_private_subscriptions` | `False` | Permite (`true`) o deniega (`false`) configurar alertas en chat privado a usuarios no listados en `TELEGRAM_ADMIN_IDS`. |
+| `ALLOW_PRIVATE_SUBSCRIPTIONS` | `allow_private_subscriptions` | `False` | Permite (`true`) o deniega (`false`) configurar alertas en chat privado. En grupos y canales siempre gestionan sus propios dueños y administradores sin configuración manual en `.env`. |
 
 ---
 
@@ -74,7 +72,7 @@ Orden estricto de evaluación en [`can_manage_subscriptions()`](../../src/permis
 - [`tests/test_permissions.py`](../../tests/test_permissions.py):
   - Administrador anónimo en supergrupo (`sender_chat.id == chat.id`) permitido; `sender_chat` ajeno denegado.
   - Fallo `TelegramError` en `get_chat_member()` deniega de forma segura.
-  - Bypass global `TELEGRAM_ADMIN_IDS` y flag `allow_private_subscriptions`.
+  - Canales (`channel_post`), propietario de supergrupo (`OWNER`) y flag `allow_private_subscriptions`.
 - [`tests/test_handlers.py`](../../tests/test_handlers.py) (`test_subscription_commands_permissions_and_lifecycle`):
   - Miembro normal en supergrupo, privado, `ADMINISTRATOR` y `channel_post`.
 

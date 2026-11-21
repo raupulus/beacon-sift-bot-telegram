@@ -34,7 +34,7 @@ uv sync --python 3.12
 
 # 2. Configurar variables de entorno
 cp .env.example .env
-# Rellenar TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_IDS, WEB_API_BASE_URL, REVERB_WS_URL y REVERB_APP_KEY
+# Rellenar TELEGRAM_BOT_TOKEN, WEB_API_BASE_URL, REVERB_WS_URL y REVERB_APP_KEY
 
 # 3. Ejecutar lint y tests
 uv run ruff check src tests

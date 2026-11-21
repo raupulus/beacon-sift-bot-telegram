@@ -66,7 +66,7 @@ bot-telegram/
 │   ├── api_client.py                # Cliente HTTP async (httpx) para /api/v1/*
 │   ├── reverb_client.py             # Cliente WebSocket Pusher v7 (websockets)
 │   ├── formatter.py                 # Formateo HTML seguro (ParseMode.HTML)
-│   ├── permissions.py               # Verificación de admins de grupo/canal y TELEGRAM_ADMIN_IDS
+│   ├── permissions.py               # Verificación de dueño/admins de grupo y canal
 │   ├── dispatcher.py                # Filtrado, deduplicación y manejo de RetryAfter/Forbidden
 │   └── handlers/                    # info.py y subscriptions.py
 └── tests/                           # Tests automatizados pytest / pytest-asyncio (25 tests)

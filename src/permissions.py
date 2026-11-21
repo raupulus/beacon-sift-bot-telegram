@@ -26,9 +26,6 @@ async def can_manage_subscriptions(
     user = update.effective_user
     chat = update.effective_chat
 
-    if user is not None and user.id in settings.admin_ids:
-        return True
-
     if chat is None:
         return False
 

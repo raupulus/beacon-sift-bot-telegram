@@ -31,7 +31,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 2. `build_application(settings)` crea `BotStorage`, `BeaconApiClient`, `Application` con hooks `post_init` / `post_shutdown`, `AlertDispatcher`, `ReverbListener`, guarda `BotAppContext` en `bot_data["app_ctx"]` y registra los 11 handlers (`register_handlers`).
 3. `post_init(app)`:
    - `await storage.initialize()`
-   - `await storage.prune_dispatched(keep_last=5000)`
+   - `await storage.prune_dispatched(retention_days=30)`
    - `await app.bot.set_my_commands(BOT_COMMANDS)`
    - Arranca tarea `asyncio` `"reverb-listener"` con `stop_event`.
 4. `post_shutdown(app)`: activa `stop_event`, cancela `"reverb-listener"`, cierra `api_client` y `storage`.
@@ -68,7 +68,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 | `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `True` | Controla vista previa de enlaces en `/latest` y `/search`. |
 | `BOT_TIMEZONE` | `bot_timezone` | `"Europe/Madrid"` | Zona horaria mostrada en `/status`, `/latest` y `/search`. |
 
-*(Usa además `TELEGRAM_ADMIN_IDS`, `ALLOW_PRIVATE_SUBSCRIPTIONS`, `WEB_API_*`, `REVERB_*` y `BOT_DB_PATH` al instanciar los componentes en `build_application`.)*
+*(Usa además `ALLOW_PRIVATE_SUBSCRIPTIONS`, `WEB_API_*`, `REVERB_*` y `BOT_DB_PATH` al instanciar los componentes en `build_application`.)*
 
 ---
 

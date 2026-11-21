@@ -7,7 +7,6 @@
 - **Hace:**
   - Lee y valida las variables de entorno del servicio desde `.env` / entorno mediante `pydantic-settings` (`Settings`).
   - Normaliza URLs base (eliminando barras finales) y el nivel de log (`upper()`).
-  - Parsea la lista separada por comas de `TELEGRAM_ADMIN_IDS` ignorando tokens vacíos o no numéricos.
   - Define la enumeración `Priority` (`low`, `medium`, `high`, `critical`) con peso ordenable, etiqueta en español e indicador visual.
   - Define DTOs inmutables (`frozen=True, slots=True`) para deserializar respuestas JSON de `web/` (`NewsItem`, `SourceSummary`, `SourceInfo`, `TypeInfo`, `ApiStatus`) y representar entidades locales (`ChatTarget`, `Subscription`).
 - **NO hace:**
@@ -48,7 +47,7 @@
 
 ## 4. Puntos de entrada (con auth, permisos y límites)
 
-- `Settings` + propiedad `settings.admin_ids -> set[int]`.
+- `Settings`.
 - `Priority.parse(value: str | None) -> Priority | None`.
 - Métodos de factoría `from_api_dict(data)` en cada DTO (`ApiStatus`, `SourceInfo`, `TypeInfo`, `NewsItem`, `SourceSummary`).
 
@@ -70,7 +69,6 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 | Variable (`.env`) | Atributo `Settings` | Valor por defecto | Efecto |
 |---|---|---|---|
 | `TELEGRAM_BOT_TOKEN` | `telegram_bot_token` | `""` | Token de `@BotFather`; `main()` aborta con `exit(1)` si está vacío. |
-| `TELEGRAM_ADMIN_IDS` | `telegram_admin_ids` | `""` | IDs numéricos separados por comas con permiso administrativo global. |
 | `ALLOW_PRIVATE_SUBSCRIPTIONS` | `allow_private_subscriptions` | `False` (`false`) | Si es `true`, cualquier usuario puede gestionar suscripciones en chat privado. |
 | `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `True` (`true`) | Desactiva previsualización web de enlaces en alertas, `/latest` y `/search`. |
 | `WEB_API_BASE_URL` | `web_api_base_url` | `"http://127.0.0.1:8000"` | URL base HTTP de `web/` (sin `/` final). |
@@ -86,7 +84,6 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 
 ## 7. Trampas conocidas
 
-- **Entradas inválidas en `TELEGRAM_ADMIN_IDS`:** si un elemento separado por comas no es entero, `admin_ids` lo ignora silenciosamente sin lanzar excepción (evita caídas en arranque, pero un typo deja sin permiso admin sin aviso).
 - **`extra="ignore"`:** variables desconocidas en `.env` se ignoran silenciosamente.
 - **Orden en `NewsItem.from_api_dict`:** si `priority` llega con valor desconocido desde la API, hace *fallback* silencioso a `Priority.LOW` (`priority_weight` toma el de la API si es `int`, o `priority.weight`).
 
@@ -94,7 +91,7 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 
 ## 8. Tests que lo cubren
 
-- [`tests/test_main_and_config.py`](../../tests/test_main_and_config.py) — verifica `Settings.admin_ids` (espacios, tokens vacíos/inválidos), normalización de URLs/`log_level` y `_parse_iso_datetime()`.
+- [`tests/test_main_and_config.py`](../../tests/test_main_and_config.py) — verifica normalización de URLs/`log_level` y `_parse_iso_datetime()`.
 - [`tests/test_api_client.py`](../../tests/test_api_client.py) — ejercita `from_api_dict` de `ApiStatus`, `SourceInfo`, `TypeInfo`, `NewsItem` y `SourceSummary`.
 - [`tests/test_dispatcher.py`](../../tests/test_dispatcher.py), [`tests/test_handlers.py`](../../tests/test_handlers.py), [`tests/test_formatter.py`](../../tests/test_formatter.py) — ejercitan `Settings`, `Priority` (`parse`, `weight`, `label_es`, `emoji`) y zona horaria.
 

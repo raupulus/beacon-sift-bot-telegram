@@ -100,7 +100,9 @@ async def test_dispatcher_handles_retry_after_and_dynamic_types_per_chat(tmp_pat
         await storage.subscribe(-2003, 0, "all", Priority.MEDIUM)
 
         bot = FakeBot(retry_once_chats={-2001}, always_retry_chats={-2003})
-        dispatcher = AlertDispatcher(bot, storage, Settings())
+        dispatcher = AlertDispatcher(
+            bot, storage, Settings(), max_concurrency=4, min_interval_seconds=0.0
+        )
 
         delivered = await dispatcher.dispatch_item(_make_item(101, "iot", Priority.MEDIUM))
         assert delivered == 1
@@ -117,6 +119,12 @@ async def test_dispatcher_migrates_chat_id_and_prunes_periodically(tmp_path: Pat
     await storage.initialize()
     try:
         await storage.subscribe(-300, 0, "linux", Priority.LOW)
+        await storage.mark_dispatched(-999, 0, 1)
+        await storage._db().execute(
+            "UPDATE dispatched_items SET dispatched_at = ? WHERE chat_id = ?",
+            ("2020-01-01T00:00:00+00:00", -999),
+        )
+        await storage._db().commit()
 
         bot = FakeBot(migrated_chats={-300: -100300})
         dispatcher = AlertDispatcher(
@@ -124,7 +132,8 @@ async def test_dispatcher_migrates_chat_id_and_prunes_periodically(tmp_path: Pat
             storage,
             Settings(),
             prune_every=2,
-            prune_keep_last=1,
+            prune_retention_days=30,
+            min_interval_seconds=0.0,
         )
 
         # 1ª entrega: migra -300 -> -100300 y entrega al supergrupo
@@ -133,11 +142,13 @@ async def test_dispatcher_migrates_chat_id_and_prunes_periodically(tmp_path: Pat
         assert await storage.list_subscriptions(-300, 0) == []
         assert len(await storage.list_subscriptions(-100300, 0)) == 1
         assert await storage.was_dispatched(-100300, 0, 1) is True
+        assert await storage.was_dispatched(-999, 0, 1) is True
 
-        # 2ª entrega: ya va directo a -100300 y dispara prune_dispatched(keep_last=1)
+        # 2ª entrega: ya va directo a -100300 y dispara prune_dispatched(retention_days=30)
         assert await dispatcher.dispatch_item(_make_item(2, "linux", Priority.LOW)) == 1
         assert await storage.was_dispatched(-100300, 0, 2) is True
-        assert await storage.was_dispatched(-100300, 0, 1) is False
+        assert await storage.was_dispatched(-100300, 0, 1) is True
+        assert await storage.was_dispatched(-999, 0, 1) is False
     finally:
         await storage.close()
 

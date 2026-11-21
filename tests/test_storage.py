@@ -84,8 +84,17 @@ async def test_dispatched_deduplication_and_watermark(tmp_path: Path) -> None:
         assert await storage.was_dispatched(-1001, 0, 99)
 
         await storage.mark_dispatched(-1001, 0, 100)
-        deleted = await storage.prune_dispatched(keep_last=1)
+        # Simular una fila antigua de hace 45 días para verificar poda por retención
+        await storage._db().execute(
+            "UPDATE dispatched_items SET dispatched_at = ? WHERE item_id = ?",
+            ("2020-01-01T00:00:00+00:00", 99),
+        )
+        await storage._db().commit()
+
+        deleted = await storage.prune_dispatched(retention_days=30)
         assert deleted == 1
+        assert await storage.was_dispatched(-1001, 0, 99) is False
+        assert await storage.was_dispatched(-1001, 0, 100) is True
     finally:
         await storage.close()
 

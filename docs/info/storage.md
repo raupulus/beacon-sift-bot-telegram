@@ -43,7 +43,7 @@ Esquema creado por `BotStorage.initialize()` ([`src/storage.py#L34-L74`](../../s
 Clase `BotStorage(db_path: str | Path)`:
 - Ciclo de vida: `initialize()`, `close()`.
 - Suscripciones y pausa: `subscribe()`, `unsubscribe()` (soporta `'all'` y devuelve `cursor.rowcount`), `list_subscriptions()` (ordena `'all'` primero y luego alfabéticamente), `set_paused()`, `is_paused()`, `get_matching_targets()`.
-- Deduplicación y cursor: `was_dispatched()`, `mark_dispatched()`, `prune_dispatched(keep_last=5000)`, `get_last_item_id()`, `set_last_item_id()`, `migrate_chat_id(old_chat_id, new_chat_id)`.
+- Deduplicación y cursor: `was_dispatched()`, `mark_dispatched()`, `prune_dispatched(retention_days=30)`, `get_last_item_id()`, `set_last_item_id()`, `migrate_chat_id(old_chat_id, new_chat_id)`.
 
 > No implementa autorización propia; asume que los *handlers* ya validaron permisos antes de mutar estado.
 
@@ -77,7 +77,7 @@ Clase `BotStorage(db_path: str | Path)`:
 - [`tests/test_storage.py`](../../tests/test_storage.py):
   - `test_subscribe_update_and_unsubscribe` (alta, actualización de prioridad, borrado unitario y borrado masivo con `'all'`).
   - `test_matching_targets_respects_priority_pause_and_dedup` (filtrado por peso de prioridad, *topics* con `thread_id`, exclusión de chats pausados, deduplicación cuando coincide regla específica y `'all'`).
-  - `test_dispatched_deduplication_and_watermark` (no retroceso del cursor, idempotencia de `mark_dispatched` y `prune_dispatched(keep_last=1)`).
+  - `test_dispatched_deduplication_and_watermark` (no retroceso del cursor, idempotencia de `mark_dispatched` y `prune_dispatched(retention_days=30)`).
   - `test_migrate_chat_id_transfers_subscriptions_pause_and_dispatched` (migración atómica de grupo clásico a supergrupo conservando *topics*, pausa y deduplicación).
 
 ---
