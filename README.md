@@ -7,6 +7,10 @@
 
 Servicio independiente en **Python 3.12 + Docker** que distribuye en tiempo real hacia canales, grupos, supergrupos (incluyendo *topics*) y chats autorizados de **Telegram** las noticias técnicas, avisos locales y alertas CVE agregadas por [`feed.raupulus.dev`](https://feed.raupulus.dev).
 
+> **Instancia pública lista para usar:**
+> - **Bot oficial en Telegram:** [`@raupulus_feed_bot`](https://t.me/raupulus_feed_bot) *(añádelo a tu grupo o canal y configúralo con `/subscribe`)*
+> - **Canal oficial de noticias y alertas:** [`https://t.me/raupulus_feed`](https://t.me/raupulus_feed)
+
 ---
 
 ## Objetivo del servicio
