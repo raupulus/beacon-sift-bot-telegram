@@ -151,6 +151,7 @@ Protocolo obligatorio aplicable a **todas** las tareas presentes y futuras en es
 | Trampa | Módulos afectados | Efecto / Cómo evitarla |
 |---|---|---|
 | Python del sistema != `3.12` | Entorno local (`uv`) | Usar siempre `uv run ...` o `uv sync --python 3.12` para respetar `.python-version = 3.12`. |
+| `CommandHandler` sin `channel_post` por defecto | `handlers/__init__.py` | `CommandHandler` solo escucha `UpdateType.MESSAGES`; todos los handlers usan explícitamente `UpdateType.MESSAGES \| UpdateType.CHANNEL_POSTS`. |
 | `getChatMember` en grupos | `permissions.py` | Telegram solo garantiza consultar otros miembros si el bot es **admin del chat** (en prueba real del `2026-11-21` funcionó también como `member` en supergrupo, pero en producción conviene otorgar rol admin). |
 | `RetryAfter.retry_after` en PTB v23+ | `dispatcher.py` | `python-telegram-bot >= 22.2` depreca `int`/`float` en favor de `datetime.timedelta`; `dispatcher.py` soporta ambos tipos. |
 | Última palabra en `/search` | `handlers/info.py` | Con >= 2 palabras tras quitar `limit`, si la última coincide con un `type` activo se trata como filtro `[type]`. |

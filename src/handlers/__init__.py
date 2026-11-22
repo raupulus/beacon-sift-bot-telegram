@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from telegram import BotCommand, LinkPreviewOptions, Update
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, filters
 
 from src.api_client import BeaconApiClient
 from src.config import Settings
@@ -93,18 +93,21 @@ def register_handlers(application: Application) -> None:
         unsubscribe_command,
     )
 
+    # Incluir CHANNEL_POSTS para que los administradores de canales puedan ejecutar comandos.
+    command_filters = filters.UpdateType.MESSAGES | filters.UpdateType.CHANNEL_POSTS
+
     handlers = [
-        CommandHandler("help", help_command),
-        CommandHandler("status", status_command),
-        CommandHandler("sources", sources_command),
-        CommandHandler("types", types_command),
-        CommandHandler("latest", latest_command),
-        CommandHandler("search", search_command),
-        CommandHandler("subscribe", subscribe_command),
-        CommandHandler("unsubscribe", unsubscribe_command),
-        CommandHandler("filters", filters_command),
-        CommandHandler("pause", pause_command),
-        CommandHandler("resume", resume_command),
+        CommandHandler("help", help_command, filters=command_filters),
+        CommandHandler("status", status_command, filters=command_filters),
+        CommandHandler("sources", sources_command, filters=command_filters),
+        CommandHandler("types", types_command, filters=command_filters),
+        CommandHandler("latest", latest_command, filters=command_filters),
+        CommandHandler("search", search_command, filters=command_filters),
+        CommandHandler("subscribe", subscribe_command, filters=command_filters),
+        CommandHandler("unsubscribe", unsubscribe_command, filters=command_filters),
+        CommandHandler("filters", filters_command, filters=command_filters),
+        CommandHandler("pause", pause_command, filters=command_filters),
+        CommandHandler("resume", resume_command, filters=command_filters),
     ]
     for handler in handlers:
         application.add_handler(handler)

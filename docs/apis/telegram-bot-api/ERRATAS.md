@@ -18,6 +18,8 @@
    - Aunque la especificación oficial advierte que solo está garantizado si el bot es administrador del chat, en prueba real en supergrupo devolvió `status=creator` aun teniendo el bot rol `member`. Aun así, en producción conviene mantener al bot como administrador en grupos gestionados.
 5. **Deprecación futura de `RetryAfter.retry_after` en `python-telegram-bot >= 22.2` (`2026-11-21`):**
    - Verificado al ejecutar `pytest`: `PTB` emitirá `datetime.timedelta` en futuras versiones mayores (`PTB_TIMEDELTA=1`). `src/dispatcher.py` soporta ambos tipos (`timedelta.total_seconds()` y `float`).
+6. **`CommandHandler` ignora `channel_post` si no se especifican `filters` (`2026-11-22`):**
+   - Verificado en `python-telegram-bot 22.8`: por defecto `CommandHandler` fija `filters=UpdateType.MESSAGES`, que devuelve `False` para `Update(channel_post=...)`. [`src/handlers/__init__.py`](../../../src/handlers/__init__.py) aplica `filters.UpdateType.MESSAGES | filters.UpdateType.CHANNEL_POSTS`.
 
 ---
 
@@ -37,4 +39,4 @@
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-21
+> Creado: 2026-11-20 · Última revisión: 2026-11-22

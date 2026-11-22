@@ -40,6 +40,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 
 - **Consultas (`info.py`):** ver parámetros, rangos y fallbacks en [`commands.md`](./commands.md).
 - **Suscripciones (`subscriptions.py`):** salvo `filters_command`, todos comprueban `can_manage_subscriptions()`, extraen `(chat.id, get_thread_id(update))` y operan sobre `BotStorage`. `subscribe_command` valida tipos distintos de `'all'` contra `/api/v1/types`.
+- **Filtro de actualizaciones en canales:** todos los `CommandHandler` aplican `filters.UpdateType.MESSAGES | filters.UpdateType.CHANNEL_POSTS` para responder también a comandos enviados dentro de canales de difusión (`channel_post` / `edited_channel_post`), ya que por defecto `python-telegram-bot` solo filtra `UpdateType.MESSAGES`.
 
 ---
 
@@ -86,6 +87,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
   - `test_all_info_commands_and_validation` (`/help`, `/status`, `/sources`, `/types`, `/latest`, límite `1..10`, `/search` con tipo/sin resultados/sin args).
   - `test_info_commands_handle_unavailable_api` (`/status` degradado y `/latest` con API caída `503`).
   - `test_subscription_commands_permissions_and_lifecycle` (permisos grupo/privado/admin/`channel_post`, validación de tipo inexistente, `/subscribe`, `/pause`, `/filters`, `/resume`, `/unsubscribe`).
+  - `test_command_handlers_accept_channel_post_updates` (comprueba que `CommandHandler` acepta `Update(channel_post=...)`).
 - [`tests/test_main_and_config.py`](../../tests/test_main_and_config.py):
   - `test_build_application_post_init_and_post_shutdown` (ciclo completo `build_application`, `post_init`, `set_my_commands(BOT_COMMANDS)` y cancelación de `reverb-listener` en `post_shutdown`).
 
@@ -97,4 +99,4 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-21
+> Creado: 2026-11-20 · Última revisión: 2026-11-22

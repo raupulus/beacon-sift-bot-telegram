@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import httpx
+from telegram import Chat, Message, MessageEntity, Update
 from telegram.constants import ChatMemberStatus, ChatType
+from telegram.ext import Application
 
 from src.api_client import BeaconApiClient
 from src.config import Settings
 from src.dispatcher import AlertDispatcher
-from src.handlers import BotAppContext
+from src.handlers import BotAppContext, register_handlers
 from src.handlers.info import (
     help_command,
     latest_command,
@@ -285,3 +288,25 @@ async def test_subscription_commands_permissions_and_lifecycle(tmp_path: Path) -
     finally:
         await api_client.close()
         await storage.close()
+
+
+def test_command_handlers_accept_channel_post_updates() -> None:
+    app = Application.builder().token("123456:TESTTOKEN").build()
+    app.bot._bot_user = SimpleNamespace(username="beacon_test_bot")
+    register_handlers(app)
+
+    msg = Message(
+        message_id=10,
+        date=datetime(2026, 11, 22, 17, 0, tzinfo=UTC),
+        chat=Chat(id=-100123456, type=ChatType.CHANNEL),
+        text="/subscribe all",
+        entities=(MessageEntity(type=MessageEntity.BOT_COMMAND, offset=0, length=10),),
+    )
+    msg.set_bot(app.bot)
+    update = Update(update_id=1, channel_post=msg)
+
+    handlers = app.handlers[0]
+    sub_handler = next(h for h in handlers if "subscribe" in getattr(h, "commands", ()))
+    matched = sub_handler.check_update(update)
+    assert matched is not None and matched is not False
+    assert matched[0] == ["all"]
