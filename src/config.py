@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     telegram_bot_token: str = ""
     allow_private_subscriptions: bool = False
-    telegram_disable_web_preview: bool = True
+    telegram_disable_web_preview: bool = False
 
     web_api_base_url: str = "http://127.0.0.1:8000"
     web_api_timeout_seconds: float = 10.0

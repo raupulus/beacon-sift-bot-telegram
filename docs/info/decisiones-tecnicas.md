@@ -38,7 +38,7 @@ Registro de decisiones deliberadas de arquitectura e implementación en `beacon-
 ## 5. Valores por defecto conservadores de privacidad y formato
 
 - **`ALLOW_PRIVATE_SUBSCRIPTIONS=false`:** Por defecto los chats privados con el bot quedan bloqueados para `/subscribe`, `/unsubscribe`, `/pause` y `/resume`; en grupos y canales cada dueño o administrador gestiona su propia configuración de forma autónoma sin listas manuales en `.env`. Evita que terceros usen una instancia pública del bot como canal de notificaciones privadas sin autorización del operador.
-- **`TELEGRAM_DISABLE_WEB_PREVIEW=true`:** Desactiva por defecto las tarjetas de vista previa de enlaces de Telegram (`LinkPreviewOptions(is_disabled=True)`) tanto en alertas automáticas como en `/latest` y `/search` para mantener listas compactas y evitar descargas extra de previsualización por cliente.
+- **`TELEGRAM_DISABLE_WEB_PREVIEW=false`:** Activa por defecto las tarjetas de vista previa nativa de enlaces de Telegram (`LinkPreviewOptions(is_disabled=False)`) en alertas automáticas, `/latest` y `/search` para mostrar miniaturas y *Vista Rápida* sin descargar ni re-alojar imágenes de prensa en el servidor propio (en mensajes de ayuda/estado del bot sigue desactivada).
 
 ---
 

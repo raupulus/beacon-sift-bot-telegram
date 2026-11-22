@@ -70,7 +70,7 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 |---|---|---|---|
 | `TELEGRAM_BOT_TOKEN` | `telegram_bot_token` | `""` | Token de `@BotFather`; `main()` aborta con `exit(1)` si está vacío. |
 | `ALLOW_PRIVATE_SUBSCRIPTIONS` | `allow_private_subscriptions` | `False` (`false`) | Si es `true`, cualquier usuario puede gestionar suscripciones en chat privado. |
-| `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `True` (`true`) | Desactiva previsualización web de enlaces en alertas, `/latest` y `/search`. |
+| `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `False` (`false`) | Activa (`false`) o desactiva (`true`) la previsualización web con imagen en alertas, `/latest` y `/search`. |
 | `WEB_API_BASE_URL` | `web_api_base_url` | `"http://127.0.0.1:8000"` | URL base HTTP de `web/` (sin `/` final). |
 | `WEB_API_TIMEOUT_SECONDS` | `web_api_timeout_seconds` | `10.0` | *Timeout* de peticiones `httpx` hacia `web/`. |
 | `REVERB_WS_URL` | `reverb_ws_url` | `"ws://127.0.0.1:8080"` | URL base WebSocket (`ws://` o `wss://`) de Laravel Reverb. |
@@ -103,4 +103,4 @@ Todas las variables están declaradas en [`src/config.py`](../../src/config.py) 
 
 ---
 
-> Creado: 2026-11-20 · Última revisión: 2026-11-21
+> Creado: 2026-11-20 · Última revisión: 2026-11-22

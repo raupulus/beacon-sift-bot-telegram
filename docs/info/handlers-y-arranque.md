@@ -66,7 +66,7 @@ En [`src/handlers/__init__.py`](../../src/handlers/__init__.py):
 |---|---|---|---|
 | `TELEGRAM_BOT_TOKEN` | `telegram_bot_token` | `""` | Token del bot; obligatorio para iniciar `main()`. |
 | `LOG_LEVEL` | `log_level` | `"INFO"` | Nivel raíz de logging en `configure_logging()`. |
-| `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `True` | Controla vista previa de enlaces en `/latest` y `/search`. |
+| `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `False` | Controla vista previa de enlaces en `/latest` y `/search`. |
 | `BOT_TIMEZONE` | `bot_timezone` | `"Europe/Madrid"` | Zona horaria mostrada en `/status`, `/latest` y `/search`. |
 
 *(Usa además `ALLOW_PRIVATE_SUBSCRIPTIONS`, `WEB_API_*`, `REVERB_*` y `BOT_DB_PATH` al instanciar los componentes en `build_application`.)*

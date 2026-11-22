@@ -63,7 +63,7 @@ Límites aplicados:
 
 | Variable (`.env`) | Atributo `Settings` | Valor por defecto | Efecto |
 |---|---|---|---|
-| `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `True` | Configura `LinkPreviewOptions(is_disabled=...)` en cada alerta enviada. |
+| `TELEGRAM_DISABLE_WEB_PREVIEW` | `telegram_disable_web_preview` | `False` | Configura `LinkPreviewOptions(is_disabled=...)` en cada alerta enviada (con `False` Telegram muestra imagen/tarjeta del enlace). |
 | `BOT_TIMEZONE` | `bot_timezone` | `"Europe/Madrid"` | Zona horaria pasada a `format_news_item()`. |
 
 ---

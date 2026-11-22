@@ -23,7 +23,7 @@
 ## 2. Convenciones de integración aplicadas en nuestro código
 
 1. **Formato HTML unificado:** [`src/formatter.py`](../../../src/formatter.py) escapa entradas mediante `html.escape(text, quote=True)`, valida URLs `http`/`https` y limita la salida a `TELEGRAM_SAFE_MAX_LENGTH = 4000` (bajo el tope de 4096 descrito en [`LIMITACIONES.md`](../../apis/telegram-bot-api/LIMITACIONES.md)).
-2. **Previsualización de enlaces controlada:** por defecto `TELEGRAM_DISABLE_WEB_PREVIEW=true` configura `LinkPreviewOptions(is_disabled=True)` tanto en alertas como en `/latest` y `/search` (en respuestas de sistema/ayuda `reply_html` desactiva siempre la vista previa por defecto).
+2. **Previsualización de enlaces controlada:** por defecto `TELEGRAM_DISABLE_WEB_PREVIEW=false` configura `LinkPreviewOptions(is_disabled=False)` tanto en alertas como en `/latest` y `/search` para mostrar tarjetas con imagen nativa de Telegram (en respuestas de sistema/ayuda `reply_html` desactiva siempre la vista previa por defecto).
 3. **Soporte de *topics*, canales y admins anónimos:**
    - `get_thread_id(update)` normaliza `message_thread_id` a `0` si no aplica.
    - `channel_post` / `edited_channel_post` habilita la gestión en canales sin requerir `effective_user`.

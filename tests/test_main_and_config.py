@@ -14,6 +14,9 @@ from src.models import _parse_iso_datetime
 
 
 def test_settings_normalization_and_iso_datetime_parsing() -> None:
+    defaults = Settings()
+    assert defaults.telegram_disable_web_preview is False
+
     settings = Settings(
         web_api_base_url="https://feed.raupulus.dev///",
         reverb_ws_url="wss://feed.raupulus.dev/",
